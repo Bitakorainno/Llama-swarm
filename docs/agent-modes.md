@@ -10,7 +10,7 @@ tools and the default working directory of a conversation.
 | ------------- | -------------- | --------------------------- | ------------------------------------------------- |
 | Desarrollador | `developer`    | read, write, edit, exec     | Implement and verify changes end to end           |
 | Planificador  | `planner`      | read only                   | Analyse and produce a plan without touching files |
-| Orquestador   | `orchestrator` | read + `agents_spawn_agent` | Split work and delegate to subagents              |
+| Orquestador | `orchestrator` | read + `agents_spawn_agent` / `agents_spawn_agents` | Split work and delegate to subagents sequentially or in parallel |
 
 The mode is stored per conversation (`agentProfileId`) together with its tool
 policy (`disabledTools`, `disabledToolCategories`) and the base system prompt.
@@ -24,9 +24,23 @@ Modes used to pin a hard-coded path. The default workspace is now the
 when a conversation starts with a mode and no directory was picked
 explicitly; an empty value leaves the server/MCP default in place.
 
-The launcher still reads `AGENT_WORKSPACE` for subagents spawned through
-`orchestrator_mcp.py`, so keep that value in sync with the UI setting if you
-plan to use the orchestrator.
+The launcher sets `AGENT_WORKSPACE` to `<basedir>/Proyects` only when the
+variable is not already defined, so exporting it before launching overrides
+the default. `mcp.json` no longer contains absolute paths: it spawns
+`orchestrator_mcp.bat`, which selects `AGENT_PYTHON`, `py -3` or `python`, in
+that order.
+
+## Parallel delegation
+
+`orchestrator_mcp.py` exposes two tools:
+
+- `agents_spawn_agent`: one subagent, sequential.
+- `agents_spawn_agents`: a batch of independent subagents run with a thread
+  pool. Batches are capped by `AGENT_MAX_DELEGATIONS` (default 8) and
+  parallelism by `AGENT_PARALLELISM` (default 4).
+
+Use the batch tool only for tasks without dependencies. Dependent steps still
+run sequentially with `agents_spawn_agent`.
 
 ## Permissions
 

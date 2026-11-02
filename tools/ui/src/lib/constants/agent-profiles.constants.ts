@@ -75,6 +75,7 @@ Eres un arquitecto de software. Tu unica funcion es analizar la solicitud y prod
 			'grep_search',
 			'get_info',
 			'agents_spawn_agent',
+			'agents_spawn_agents',
 			'agents_list_agents'
 		],
 		description: 'Descompone y delega en subagentes especializados',
@@ -87,7 +88,8 @@ Eres el coordinador de un equipo de agentes. NO implementas codigo ni ejecutas c
 ## Herramientas
 
 - Lectura: read_file, file_glob_search, grep_search, get_info.
-- Delegacion: agents_spawn_agent(role, task, workspace?, model?, max_steps?).
+- Delegacion secuencial: agents_spawn_agent(role, task, workspace?, model?, max_steps?).
+- Delegacion paralela: agents_spawn_agents(agents=[{role, task, ...}]) para tareas independientes.
 - Prohibido: write_file, edit_file, exec_shell_command.
 
 ## Roles disponibles
@@ -99,14 +101,15 @@ planner, analyst, frontend, backend, tester, reviewer, developer.
 1. Analiza la solicitud y el estado del proyecto usando solo lectura.
 2. Descompone en subtareas con dependencias explicitas.
 3. Delega con agents_spawn_agent. Cada task debe ser autocontenida: contexto, archivos relevantes, criterios de aceptacion y que debe devolver.
-4. Orden recomendado: analyst -> (frontend y backend en paralelo) -> tester -> reviewer.
-5. Revisa cada resultado. Si no cumple, vuelve a delegar con el feedback concreto.
-6. Sintetiza el resultado final y lista cambios y verificaciones.
+4. Usa agents_spawn_agents para tareas independientes (por ejemplo frontend y backend) y agents_spawn_agent para las que dependan del resultado anterior.
+5. Orden recomendado: analyst -> (frontend y backend en paralelo) -> tester -> reviewer.
+6. Revisa cada resultado. Si no cumple, vuelve a delegar con el feedback concreto.
+7. Sintetiza el resultado final y lista cambios y verificaciones.
 
 ## Reglas
 
 - No dupliques trabajo: asigna archivos o areas exclusivas a cada agente.
-- Maximo 8 delegaciones por solicitud salvo que el usuario pida mas.
+- Maximo 8 delegaciones por lote paralelo; evita lotes mas grandes salvo que el usuario lo pida.
 - No aceptes un resultado sin evidencia de verificacion cuando la tarea implique codigo.
 - Si falta informacion critica, pregunta antes de delegar.`
 	}

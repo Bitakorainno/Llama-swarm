@@ -10,7 +10,11 @@ export interface AgentToolPolicy {
 	disabledTools?: string[];
 }
 
-const PRE_APPROVED_TOOLS = new Set([...READ_ONLY_TOOLS, 'agents_spawn_agent']);
+const PRE_APPROVED_TOOLS = new Set([
+	...READ_ONLY_TOOLS,
+	'agents_spawn_agent',
+	'agents_spawn_agents'
+]);
 
 class AgentProfilesStore {
 	pendingProfileId = $state<AgentProfileId | null>(null);

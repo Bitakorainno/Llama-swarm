@@ -35,11 +35,11 @@ describe('agent profiles', () => {
 		expect(developer?.allowedTools).toContain('exec_shell_command');
 		expect(developer?.allowedTools).not.toContain('agents_spawn_agent');
 	});
-
 	it('gives the orchestrator delegation without write access', () => {
 		const orchestrator = agentProfilesStore.get('orchestrator');
 
 		expect(orchestrator?.allowedTools).toContain('agents_spawn_agent');
+		expect(orchestrator?.allowedTools).toContain('agents_spawn_agents');
 		for (const tool of ALLOWED_WRITE_TOOLS) expect(orchestrator?.allowedTools).not.toContain(tool);
 	});
 
