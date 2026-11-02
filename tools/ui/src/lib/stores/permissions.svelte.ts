@@ -60,6 +60,14 @@ class PermissionsStore {
 		this.persist();
 	}
 
+	revokeTools(keys: string[]): void {
+		let changed = false;
+
+		for (const key of keys) changed = this._tools.delete(key) || changed;
+
+		if (changed) this.persist();
+	}
+
 	private persist(): void {
 		try {
 			localStorage.setItem(ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY, JSON.stringify([...this._tools]));

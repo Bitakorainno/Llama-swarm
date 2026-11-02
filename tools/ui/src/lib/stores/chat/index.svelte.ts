@@ -36,7 +36,6 @@ import { type ChatStreamHost, ChatStreamManager } from '$lib/stores/chat/streams
 import { conversationsStore } from '$lib/stores/conversations/index.svelte';
 import { mcpStore } from '$lib/stores/mcp/index.svelte';
 import { modelsStore } from '$lib/stores/models/index.svelte';
-import { permissionsStore } from '$lib/stores/permissions.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { settingsStore } from '$lib/stores/settings/index.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
@@ -280,6 +279,8 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 				else await this.removeProfileSystemPrompt();
 			}
 
+			agentProfilesStore.applyPermissions(null);
+
 			return;
 		}
 
@@ -301,7 +302,7 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 		await DatabaseService.updateConversation(conv.id, updates);
 
 		await this.ensureSystemPromptContent(profile.systemPrompt);
-		permissionsStore.allowTools(agentProfilesStore.getPreApprovedKeys(profile));
+		agentProfilesStore.applyPermissions(profile);
 	}
 
 	cancelPreEncode(): void {

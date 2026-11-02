@@ -287,6 +287,9 @@ class ConversationsStore implements ConversationsPreferencesHost {
 		});
 
 		this.preferences.pendingCwd = null;
+
+		if (profile) agentProfilesStore.applyPermissions(profile);
+
 		agentProfilesStore.resetPending();
 
 		this.conversations = [conversation, ...this.conversations];
