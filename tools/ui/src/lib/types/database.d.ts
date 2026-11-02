@@ -1,4 +1,5 @@
 import { AttachmentType, ReasoningEffort, ToolSource } from '$lib/enums';
+import type { AgentProfileId } from '$lib/types/agent-profile';
 import type { ChatMessageTimings, ChatMessageType, ChatRole } from '$lib/types/chat';
 
 /**
@@ -27,6 +28,8 @@ export interface DatabaseConversation {
 	disabledToolCategories?: ToolSource[];
 	forkedFromConversationId?: string;
 	pinned?: boolean;
+	agentProfileId?: AgentProfileId;
+	agentProfileBasePrompt?: string;
 }
 
 export interface DatabaseMessageExtraAudioFile {

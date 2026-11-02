@@ -12,6 +12,7 @@
 import {
 	COMPACTION,
 	CWD_CLEARED_TEXT,
+	PROFILE_PROMPT_MARKER,
 	REASONING_EFFORT_TOKENS,
 	SYSTEM_MESSAGE_PLACEHOLDER,
 	TITLE_GENERATION
@@ -26,6 +27,7 @@ import {
 import { ChatService } from '$lib/services/chat.service';
 import { DatabaseService } from '$lib/services/database.service';
 // direct imports between stores, not via the barrel, to avoid circular deps
+import { agentProfilesStore } from '$lib/stores/agent-profiles.svelte';
 import { agenticStore } from '$lib/stores/agentic/index.svelte';
 import { chatActivityStore } from '$lib/stores/chat/activity.svelte';
 import { type ChatFlowsHost, ChatMessageFlows } from '$lib/stores/chat/flows.svelte';
@@ -34,6 +36,7 @@ import { type ChatStreamHost, ChatStreamManager } from '$lib/stores/chat/streams
 import { conversationsStore } from '$lib/stores/conversations/index.svelte';
 import { mcpStore } from '$lib/stores/mcp/index.svelte';
 import { modelsStore } from '$lib/stores/models/index.svelte';
+import { permissionsStore } from '$lib/stores/permissions.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { settingsStore } from '$lib/stores/settings/index.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
@@ -43,10 +46,12 @@ import type {
 	ChatMessagePromptProgress,
 	ChatMessageTimings,
 	ChatStreamCallbacks,
+	DatabaseConversation,
 	DatabaseMessage,
 	DatabaseMessageExtra,
 	ErrorDialogState
 } from '$lib/types';
+import type { AgentProfileId } from '$lib/types/agent-profile';
 import type { AgenticToolPolicy } from '$lib/types/agentic';
 import {
 	canCompactMessages,
@@ -239,6 +244,66 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 			console.error('Failed to add system prompt:', error);
 		}
 	}
+	async applyAgentProfile(profileId: AgentProfileId | null): Promise<void> {
+		const conv = conversationsStore.activeConversation;
+
+		if (!conv) {
+			agentProfilesStore.pendingProfileId = profileId;
+
+			return;
+		}
+
+		const profile = agentProfilesStore.get(profileId);
+		const policy = profile ? agentProfilesStore.buildToolPolicy(profile) : {};
+		const updates: Partial<DatabaseConversation> = {
+			agentProfileId: profile?.id,
+			cwd: conv.cwd ?? profile?.cwd,
+			disabledToolCategories: profile ? policy.disabledToolCategories : undefined,
+			disabledTools: profile ? policy.disabledTools : undefined
+		};
+
+		if (!profile) {
+			const savedBase = conv.agentProfileBasePrompt;
+
+			updates.agentProfileBasePrompt = undefined;
+			conversationsStore.applyConversationUpdate(conv.id, updates);
+			await DatabaseService.updateConversation(conv.id, updates);
+
+			if (savedBase && savedBase.trim()) {
+				await this.ensureSystemPromptContent(savedBase.trim());
+			} else if (savedBase === '') {
+				await this.removeProfileSystemPrompt();
+			} else {
+				const defaultPrompt = settingsStore.config.systemMessage?.toString().trim();
+
+				if (defaultPrompt) await this.ensureSystemPromptContent(defaultPrompt);
+				else await this.removeProfileSystemPrompt();
+			}
+
+			return;
+		}
+
+		if (conv.agentProfileBasePrompt === undefined) {
+			const allMessages = await conversationsStore.getConversationMessages(conv.id);
+			const rootMessage = allMessages.find((m) => m.type === MessageType.ROOT && m.parent === null);
+			const existingSystem = allMessages.find(
+				(m) =>
+					m.role === MessageRole.SYSTEM &&
+					m.type !== MessageType.ROOT &&
+					m.parent === rootMessage?.id &&
+					!m.content.startsWith(PROFILE_PROMPT_MARKER)
+			);
+
+			updates.agentProfileBasePrompt = existingSystem ? existingSystem.content : '';
+		}
+
+		conversationsStore.applyConversationUpdate(conv.id, updates);
+		await DatabaseService.updateConversation(conv.id, updates);
+
+		await this.ensureSystemPromptContent(profile.systemPrompt);
+		permissionsStore.allowTools(agentProfilesStore.getPreApprovedKeys(profile));
+	}
+
 	cancelPreEncode(): void {
 		if (this.preEncodeAbortController) {
 			this.preEncodeAbortController.abort();
@@ -263,6 +328,7 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 		this.clearChatStreaming(convId);
 		this.processing.setState(convId, null);
 	}
+
 	clearChatStreaming(convId: string, messageId?: string): void {
 		// session aware: a stale generation must not wipe a newer one's streaming state on the
 		// same conversation, that would drop the frozen stop identity and stop the wrong session
@@ -278,7 +344,6 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 		this.isEditModeActive = false;
 		this.addFilesHandler = null;
 	}
-
 	clearPendingEditMessageId(): void {
 		this.pendingEditMessageId = null;
 	}
@@ -766,7 +831,9 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 			if (isNewConversation) {
 				const rootId = await DatabaseService.createRootMessage(currentConv.id);
 				const currentConfig = settingsStore.config;
-				const systemPrompt = currentConfig.systemMessage?.toString().trim();
+				const profile = agentProfilesStore.get(currentConv.agentProfileId);
+				const systemPrompt =
+					profile?.systemPrompt ?? currentConfig.systemMessage?.toString().trim();
 
 				let sysOrRootId = rootId;
 
@@ -847,6 +914,7 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 			});
 		}
 	}
+
 	setChatLoading(convId: string, loading: boolean): void {
 		if (loading) {
 			this.activity.markLocal(convId);
@@ -855,7 +923,6 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 			this.setChatReasoning(convId, false);
 		}
 	}
-
 	setChatReasoning(convId: string, reasoning: boolean): void {
 		if (reasoning) this.chatReasoningStates.set(convId, true);
 		else this.chatReasoningStates.delete(convId);
@@ -1399,6 +1466,62 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 		return Number(settingsStore.config.compactionPreservedSteps);
 	}
 
+	private async ensureSystemPromptContent(content: string): Promise<void> {
+		const activeConv = conversationsStore.activeConversation;
+		const trimmed = content.trim();
+
+		if (!activeConv || !trimmed) return;
+
+		const allMessages = await conversationsStore.getConversationMessages(activeConv.id);
+		const rootMessage = allMessages.find((m) => m.type === MessageType.ROOT && m.parent === null);
+		const rootId = rootMessage
+			? rootMessage.id
+			: await DatabaseService.createRootMessage(activeConv.id);
+		const existing = allMessages.find(
+			(m) => m.role === MessageRole.SYSTEM && m.parent === rootId && m.type !== MessageType.ROOT
+		);
+
+		if (existing) {
+			await DatabaseService.updateMessage(existing.id, { content: trimmed });
+			const index = conversationsStore.findMessageIndex(existing.id);
+
+			if (index !== -1) conversationsStore.updateMessageAtIndex(index, { content: trimmed });
+			else conversationsStore.activeMessages.unshift({ ...existing, content: trimmed });
+
+			return;
+		}
+
+		const firstActiveMessage = conversationsStore.activeMessages.find((m) => m.parent === rootId);
+		const systemMessage = await DatabaseService.createSystemMessage(activeConv.id, trimmed, rootId);
+
+		if (firstActiveMessage) {
+			await DatabaseService.updateMessage(firstActiveMessage.id, {
+				parent: systemMessage.id
+			});
+			await DatabaseService.updateMessage(systemMessage.id, {
+				children: [firstActiveMessage.id]
+			});
+			const updatedRootChildren = rootMessage
+				? rootMessage.children.filter((id: string) => id !== firstActiveMessage.id)
+				: [];
+
+			await DatabaseService.updateMessage(rootId, {
+				children: [
+					...updatedRootChildren.filter((id: string) => id !== systemMessage.id),
+					systemMessage.id
+				]
+			});
+			const firstMsgIndex = conversationsStore.findMessageIndex(firstActiveMessage.id);
+
+			if (firstMsgIndex !== -1)
+				conversationsStore.updateMessageAtIndex(firstMsgIndex, {
+					parent: systemMessage.id
+				});
+		}
+
+		conversationsStore.activeMessages.unshift(systemMessage);
+	}
+
 	private async generateTitleWithLLM(
 		userContent: string,
 		assistantContent: string,
@@ -1477,6 +1600,38 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 			signal,
 			request.tools
 		);
+	}
+
+	private async removeProfileSystemPrompt(): Promise<void> {
+		const activeConv = conversationsStore.activeConversation;
+
+		if (!activeConv) return;
+
+		const allMessages = await conversationsStore.getConversationMessages(activeConv.id);
+		const rootMessage = allMessages.find((m) => m.type === MessageType.ROOT && m.parent === null);
+		const systemMessage = allMessages.find(
+			(m) =>
+				m.role === MessageRole.SYSTEM &&
+				m.type !== MessageType.ROOT &&
+				m.parent === rootMessage?.id &&
+				m.content.startsWith(PROFILE_PROMPT_MARKER)
+		);
+
+		if (!rootMessage || !systemMessage) return;
+
+		const children = allMessages.filter((m) => m.parent === systemMessage.id).map((m) => m.id);
+
+		for (const childId of children) {
+			await DatabaseService.updateMessage(childId, { parent: rootMessage.id });
+		}
+
+		await DatabaseService.updateMessage(rootMessage.id, {
+			children: rootMessage.children.flatMap((id: string) =>
+				id === systemMessage.id ? children : [id]
+			)
+		});
+		await DatabaseService.deleteMessage(systemMessage.id);
+		await conversationsStore.refreshActiveMessages();
 	}
 
 	private async savePartialResponseIfNeeded(convId?: string): Promise<void> {

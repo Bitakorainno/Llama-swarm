@@ -2,6 +2,7 @@
 // All constants should be imported from '$lib/constants'
 
 export * from './agentic.constants';
+export * from './agent-profiles.constants';
 export * from './api-endpoints.constants';
 export * from './app.constants';
 export * from './backend.constants';

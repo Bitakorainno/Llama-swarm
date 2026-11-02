@@ -3,6 +3,7 @@
 	import {
 		ChatAttachmentsList,
 		ChatFormActions,
+		ChatFormAgentProfile,
 		ChatFormCurrentWorkingDirectory,
 		ChatFormInput,
 		ChatFormInputFileInputInvisible,
@@ -122,6 +123,8 @@
 	let chatFormActionsRef: ChatFormActions | undefined = $state(undefined);
 	let fileInputRef: ChatFormInputFileInputInvisible | undefined = $state(undefined);
 	let pickersRef: { handleKeydown: (event: KeyboardEvent) => boolean } | undefined =
+		$state(undefined);
+	let cwdPickerRef: { handleKeydown: (event: KeyboardEvent) => boolean } | undefined =
 		$state(undefined);
 	let inputRef: ChatInputHandle | undefined = $state(undefined);
 
@@ -298,6 +301,10 @@
 		// Pickers consume navigation/escape keys first; when consumed, skip
 		// the enter-to-submit logic below.
 		if (pickers.handleKeydown(event)) {
+			return;
+		}
+
+		if (pickers.isWorkingDirectoryPickerOpen && cwdPickerRef?.handleKeydown(event)) {
 			return;
 		}
 
@@ -651,18 +658,23 @@
 
 	<ContextGaugePopup />
 
-	{#if conversationsStore.preferences.hasEnabledCwdTools()}
-		<ChatFormCurrentWorkingDirectory
-			bind:query={pickers.workingDirectoryQuery}
-			customAnchor={mentionAnchor}
-			directory={cwd}
-			{disabled}
-			isOpen={pickers.isWorkingDirectoryPickerOpen}
-			onChange={handleWorkingDirectoryChange}
-			onClose={pickers.handleWorkingDirectoryClose}
-			onOpen={pickers.handleWorkingDirectoryOpen}
-		/>
-	{/if}
+	<div class="flex flex-wrap items-center gap-3">
+		<ChatFormAgentProfile {disabled} />
+
+		{#if conversationsStore.preferences.hasEnabledCwdTools()}
+			<ChatFormCurrentWorkingDirectory
+				bind:query={pickers.workingDirectoryQuery}
+				bind:this={cwdPickerRef}
+				customAnchor={mentionAnchor}
+				directory={cwd}
+				{disabled}
+				isOpen={pickers.isWorkingDirectoryPickerOpen}
+				onChange={handleWorkingDirectoryChange}
+				onClose={pickers.handleWorkingDirectoryClose}
+				onOpen={pickers.handleWorkingDirectoryOpen}
+			/>
+		{/if}
+	</div>
 </form>
 
 <DialogMcpResourcesBrowser

@@ -16,6 +16,7 @@ import { DatabaseService } from '$lib/services/database.service';
 import { MigrationService } from '$lib/services/migration.service';
 import { RouterService } from '$lib/services/router.service';
 // direct imports between stores, not via the barrel, to avoid circular deps
+import { agentProfilesStore } from '$lib/stores/agent-profiles.svelte';
 import { draftMessagesStore } from '$lib/stores/chat/drafts.svelte';
 import {
 	ConversationPreferences,
@@ -245,6 +246,7 @@ class ConversationsStore implements ConversationsPreferencesHost {
 		this.activeMessages = [];
 		// reload defaults so new chats inherit persisted state
 		this.preferences.resetPending();
+		agentProfilesStore.resetPending();
 	}
 
 	/** One-shot handoff of the messages the last loadConversation read. */
@@ -274,13 +276,17 @@ class ConversationsStore implements ConversationsPreferencesHost {
 		// the defaults. Working directory picked on the new-chat screen gets
 		// threaded in here too, then cleared so it doesn't bleed onto subsequent
 		// new chats.
+		const profile = agentProfilesStore.get(agentProfilesStore.pendingProfileId);
+		const profilePolicy = profile ? agentProfilesStore.buildToolPolicy(profile) : null;
 		const conversation = await DatabaseService.createConversation(conversationName, {
-			cwd: this.preferences.pendingCwd ?? undefined,
+			agentProfileId: profile?.id,
+			cwd: this.preferences.pendingCwd ?? profile?.cwd ?? undefined,
 			reasoningEffort: this.preferences.pendingReasoningEffort,
-			...this.preferences.getToolPolicySnapshot()
+			...(profilePolicy ?? this.preferences.getToolPolicySnapshot())
 		});
 
 		this.preferences.pendingCwd = null;
+		agentProfilesStore.resetPending();
 
 		this.conversations = [conversation, ...this.conversations];
 		this.activeConversation = conversation;
@@ -543,6 +549,7 @@ class ConversationsStore implements ConversationsPreferencesHost {
 			// Drop any cwd the user drafted on the empty new-chat screen -
 			// it doesn't belong to this conversation.
 			this.preferences.pendingCwd = null;
+			agentProfilesStore.resetPending();
 
 			const allMessages = await DatabaseService.getConversationMessages(convId);
 

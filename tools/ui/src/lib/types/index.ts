@@ -3,6 +3,9 @@
  * Import types from '$lib/types' for cleaner imports
  */
 
+// Agent profiles
+export type { AgentProfile, AgentProfileId } from './agent-profile';
+
 // API types
 export type {
 	ApiChatMessageContentPart,

@@ -255,6 +255,8 @@ export { default as ChatFormInput } from './ChatForm/ChatFormInput/ChatFormInput
  */
 export { default as ChatFormCurrentWorkingDirectory } from './ChatForm/ChatFormCurrentWorkingDirectory/ChatFormCurrentWorkingDirectory.svelte';
 
+export { default as ChatFormAgentProfile } from './ChatForm/ChatFormAgentProfile/ChatFormAgentProfile.svelte';
+
 /**
  * **ChatFormPickerMcpPrompts** - MCP prompt selection interface
  *

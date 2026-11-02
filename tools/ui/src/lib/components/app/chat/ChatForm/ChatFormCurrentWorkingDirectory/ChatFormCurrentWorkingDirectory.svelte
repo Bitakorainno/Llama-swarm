@@ -1,7 +1,6 @@
 <script lang="ts">
 	import ChatFormCurrentWorkingDirectoryChip from './ChatFormCurrentWorkingDirectoryChip.svelte';
 	import ChatFormCurrentWorkingDirectoryResultsList from './ChatFormCurrentWorkingDirectoryResultsList.svelte';
-	import { FolderOpen } from '@lucide/svelte';
 	import SearchInput from '$lib/components/app/forms/SearchInput.svelte';
 	import * as Popover from '$lib/components/ui/popover';
 	import { DEFAULT_MOBILE_BREAKPOINT, HOME_TILDE, SEARCH, UI_DATA_ATTRS } from '$lib/constants';
@@ -9,16 +8,10 @@
 	import { useDebouncedSearch } from '$lib/hooks/use-debounced-search.svelte';
 	import { usePickerNavigation } from '$lib/hooks/use-picker-navigation.svelte';
 	import { useScrollActiveRow } from '$lib/hooks/use-scroll-active-row.svelte';
-	import { ToolsService } from '$lib/services/tools.service';
 	import { conversationsStore, toolsStore } from '$lib/stores';
-	import type { GlobEntry } from '$lib/types';
-	import {
-		abbreviateHome,
-		buildCaseInsensitiveGlob,
-		joinPath,
-		lastPathSegment,
-		runGlobSearchWithChildren
-	} from '$lib/utils';
+	import { abbreviateHome, runGlobSearchWithChildren } from '$lib/utils';
+
+	const ROOT_PATH_REGEX = /^(?:[A-Za-z]:[\\/]?|\/|\\\\[^\\/]+[\\/][^\\/]+[\\/]?)$/;
 
 	// Microtask delay so the popover's focus scope tears down first.
 	const FOCUS_DELAY_MS = 0;
@@ -53,11 +46,6 @@
 		query = $bindable('')
 	}: Props = $props();
 
-	// File System Access API is opt-in (Chrome / Edge / Opera): the popover
-	// exposes a "Browse" button only when available.
-	const pickerSupported =
-		typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
-
 	// When the server does not serve file_glob_search or the user disabled
 	// it, the picker still opens for manual entry but explains why search is
 	// unavailable instead of firing searches that would only fail. Browse is
@@ -79,6 +67,7 @@
 
 	let queryResults = $state<string[]>([]);
 	let searchError = $state<string | null>(null);
+	let submitError = $state<string | null>(null);
 	let listContainer = $state<HTMLDivElement | null>(null);
 
 	const nav = usePickerNavigation({
@@ -109,6 +98,7 @@
 
 		const q = query.trim();
 
+		submitError = null;
 		nav.reset(-1);
 
 		if (q && fileSearchEnabled) {
@@ -175,12 +165,7 @@
 				searchScope = res.exactDir ?? res.args.path;
 				queryResults = res.entries.map((e) => e.path).slice(0, SEARCH.MAX_RESULTS_SHOWN);
 
-				if (queryResults.length > 0) {
-					nav.reset(0);
-					nav.bumpScroll(); // scroll the list back to the top (first item is hovered)
-				} else {
-					nav.reset(-1);
-				}
+				nav.reset(-1);
 
 				searchError = null;
 			} catch (err) {
@@ -210,55 +195,8 @@
 		onChange?.(trimmed);
 	}
 
-	// Resolve a browser-picked folder name (which exposes only the leaf name)
-	// to a server-side absolute path; null when the server cannot locate it,
-	// so the caller fails visibly instead of committing a bare leaf name.
-	async function resolveNativeName(name: string): Promise<string | null> {
-		try {
-			const res = await ToolsService.executeToolRaw(BuiltInTool.SERVER_FILE_GLOB_SEARCH, {
-				include: buildCaseInsensitiveGlob(name),
-				limit: SEARCH.NATIVE_LIMIT,
-				max_depth: SEARCH.NATIVE_MAX_DEPTH,
-				path: homeBase ?? HOME_TILDE,
-				type: GlobSearchType.DIR
-			});
-			const base = typeof res.base === 'string' ? res.base : '';
-			const entries = Array.isArray(res.entries) ? (res.entries as GlobEntry[]) : [];
-			const match = entries.find(
-				(e) => lastPathSegment(e.path).toLowerCase() === name.toLowerCase()
-			);
-
-			return match ? joinPath(base, match.path) : null;
-		} catch {
-			return null;
-		}
-	}
-
-	async function browseNative() {
-		if (disabled || !window.showDirectoryPicker) return;
-
-		try {
-			const handle = await window.showDirectoryPicker();
-			const path = await resolveNativeName(handle.name);
-
-			if (path) {
-				setDirectory(path);
-				closePicker();
-			} else {
-				// keep the previous cwd and fail visibly instead of committing a
-				// bare leaf name that would resolve against the server cwd
-				searchError = `Could not resolve "${handle.name}" to a server path`;
-			}
-		} catch (err) {
-			// user cancelled - silently ignore; other errors are logged
-			if (err instanceof DOMException && err.name === 'AbortError') return;
-
-			console.error('[ChatFormCurrentWorkingDirectory] showDirectoryPicker failed:', err);
-		}
-	}
-
-	function handleSubmit() {
-		const value = query.trim();
+	async function handleSubmit() {
+		const value = (searchInputRef?.value ?? query).trim();
 
 		if (!value) {
 			closePicker();
@@ -266,30 +204,82 @@
 			return;
 		}
 
-		setDirectory(value);
-		closePicker();
+		if (!fileSearchEnabled) {
+			setDirectory(value);
+			closePicker();
+
+			return;
+		}
+
+		if (ROOT_PATH_REGEX.test(value)) {
+			setDirectory(value);
+			closePicker();
+
+			return;
+		}
+
+		try {
+			const res = await runGlobSearchWithChildren(
+				value,
+				homeBase ?? HOME_TILDE,
+				SEARCH.PATH_NAV_MAX_DEPTH,
+				5,
+				new AbortController().signal,
+				{ childMaxDepth: 0, type: GlobSearchType.DIR }
+			);
+
+			if (res.error) {
+				submitError = res.error;
+
+				return;
+			}
+
+			if (!res.exactDir) {
+				submitError = `Directory not found: ${value}`;
+
+				return;
+			}
+
+			setDirectory(res.exactDir);
+			closePicker();
+		} catch (err) {
+			submitError = err instanceof Error ? err.message : String(err);
+		}
 	}
 
-	function handleKeydown(event: KeyboardEvent) {
+	export function handleKeydown(event: KeyboardEvent): boolean {
 		if (event.key === KeyboardKey.ENTER) {
 			event.preventDefault();
 
 			if (nav.hoveredIndex >= 0 && queryResults[nav.hoveredIndex]) {
 				commit(queryResults[nav.hoveredIndex]);
-			} else if (queryResults.length === 0) {
-				handleSubmit();
+			} else {
+				void handleSubmit();
 			}
+
+			return true;
 		} else if (event.key === KeyboardKey.ARROW_DOWN) {
 			if (queryResults.length > 0) {
 				event.preventDefault();
 				nav.move(1);
+
+				return true;
 			}
 		} else if (event.key === KeyboardKey.ARROW_UP) {
 			if (queryResults.length > 0) {
 				event.preventDefault();
 				nav.move(-1);
+
+				return true;
 			}
+		} else if (event.key === KeyboardKey.ESCAPE) {
+			event.preventDefault();
+			closePicker();
+
+			return true;
 		}
+
+		return false;
 	}
 
 	function clearDirectory(event?: MouseEvent) {
@@ -369,8 +359,12 @@
 				bind:value={query}
 				class="w-full"
 				onClose={closePicker}
-				placeholder="Choose working directory"
+				placeholder="Type an absolute path or search"
 			/>
+
+			{#if submitError}
+				<div class="px-2 py-1.5 text-sm text-destructive">{submitError}</div>
+			{/if}
 
 			{#if !fileSearchEnabled}
 				<div class="px-2 py-1.5 text-sm text-muted-foreground">{searchUnavailableMessage}</div>
@@ -387,16 +381,10 @@
 				/>
 			{/if}
 
-			{#if pickerSupported && fileSearchEnabled}
-				<button
-					class="-mt-1 flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground"
-					onclick={browseNative}
-					type="button"
-				>
-					<FolderOpen class="size-4 shrink-0 text-muted-foreground" />
-
-					<span>Browse</span>
-				</button>
+			{#if !query.trim() && fileSearchEnabled}
+				<div class="px-2 py-1.5 text-sm text-muted-foreground">
+					Type an absolute server path (e.g. H:\proj) and press Enter.
+				</div>
 			{/if}
 
 			{#if homeBase && fileSearchEnabled}

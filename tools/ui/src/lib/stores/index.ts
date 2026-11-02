@@ -17,6 +17,9 @@
  * Each store below documents its primary responsibility.
  */
 
+// AGENT PROFILES (planner / developer / orchestrator)
+export { agentProfilesStore } from './agent-profiles.svelte';
+
 // CHAT / MESSAGING
 export { chatStore } from './chat/index.svelte';
 
