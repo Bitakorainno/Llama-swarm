@@ -1,5 +1,6 @@
-import { AGENT_PROFILES, READ_ONLY_TOOLS } from '$lib/constants';
+import { AGENT_PROFILES, READ_ONLY_TOOLS, SETTINGS_KEYS } from '$lib/constants';
 import { ToolSource } from '$lib/enums';
+import { settingsStore } from '$lib/stores/settings/index.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
 import type { AgentProfile, AgentProfileId } from '$lib/types';
 
@@ -12,6 +13,16 @@ const PRE_APPROVED_TOOLS = new Set([...READ_ONLY_TOOLS, 'agents_spawn_agent']);
 
 class AgentProfilesStore {
 	pendingProfileId = $state<AgentProfileId | null>(null);
+
+	get defaultWorkspace(): string | undefined {
+		const value = settingsStore.config[SETTINGS_KEYS.AGENTIC_WORKSPACE];
+
+		if (typeof value !== 'string') return undefined;
+
+		const trimmed = value.trim();
+
+		return trimmed || undefined;
+	}
 
 	get profiles(): AgentProfile[] {
 		return AGENT_PROFILES;

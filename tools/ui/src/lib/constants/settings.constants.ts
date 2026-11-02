@@ -380,6 +380,14 @@ export const SETTINGS_REGISTRY: SettingsSectionEntry[] = [
 		icon: ListRestart,
 		settings: [
 			{
+				defaultValue: '',
+				help: 'Default working directory applied when a chat starts with an agent profile and no directory was picked. Leave empty to use the server default.',
+				key: SETTINGS_KEYS.AGENTIC_WORKSPACE,
+				label: 'Agent workspace',
+				placeholder: 'e.g. C:\\projects',
+				type: SettingsFieldType.INPUT
+			},
+			{
 				defaultValue: DEFAULT_AGENTIC_CONFIG.maxTurns,
 				help: 'Maximum number of tool execution cycles before stopping (prevents infinite loops).',
 				isPositiveInteger: true,

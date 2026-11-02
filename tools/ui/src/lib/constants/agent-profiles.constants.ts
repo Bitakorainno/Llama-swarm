@@ -1,7 +1,5 @@
 import type { AgentProfile } from '$lib/types/agent-profile';
 
-export const DEFAULT_AGENT_WORKSPACE = 'H:\\llama-b11963-bin-win-vulkan-x64\\Proyects';
-
 export const PROFILE_PROMPT_MARKER = '# MODO ';
 
 export const READ_ONLY_TOOLS = [
@@ -23,7 +21,6 @@ export const AGENT_PROFILES: AgentProfile[] = [
 			'edit_file',
 			'exec_shell_command'
 		],
-		cwd: DEFAULT_AGENT_WORKSPACE,
 		description: 'Implementa y verifica cambios en el proyecto',
 		id: 'developer',
 		label: 'Desarrollador',
@@ -47,7 +44,6 @@ Informa de forma breve: que cambiaste, archivos afectados, comandos ejecutados y
 	},
 	{
 		allowedTools: ['read_file', 'file_glob_search', 'grep_search', 'get_info'],
-		cwd: DEFAULT_AGENT_WORKSPACE,
 		description: 'Analiza y propone un plan sin modificar nada',
 		id: 'planner',
 		label: 'Planificador',
@@ -81,7 +77,6 @@ Eres un arquitecto de software. Tu unica funcion es analizar la solicitud y prod
 			'agents_spawn_agent',
 			'agents_list_agents'
 		],
-		cwd: DEFAULT_AGENT_WORKSPACE,
 		description: 'Descompone y delega en subagentes especializados',
 		id: 'orchestrator',
 		label: 'Orquestador',

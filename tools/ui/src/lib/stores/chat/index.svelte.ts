@@ -257,7 +257,7 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 		const policy = profile ? agentProfilesStore.buildToolPolicy(profile) : {};
 		const updates: Partial<DatabaseConversation> = {
 			agentProfileId: profile?.id,
-			cwd: conv.cwd ?? profile?.cwd,
+			cwd: conv.cwd ?? (profile ? agentProfilesStore.defaultWorkspace : undefined),
 			disabledToolCategories: profile ? policy.disabledToolCategories : undefined,
 			disabledTools: profile ? policy.disabledTools : undefined
 		};

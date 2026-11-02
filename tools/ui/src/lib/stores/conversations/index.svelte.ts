@@ -280,7 +280,8 @@ class ConversationsStore implements ConversationsPreferencesHost {
 		const profilePolicy = profile ? agentProfilesStore.buildToolPolicy(profile) : null;
 		const conversation = await DatabaseService.createConversation(conversationName, {
 			agentProfileId: profile?.id,
-			cwd: this.preferences.pendingCwd ?? profile?.cwd ?? undefined,
+			cwd:
+				this.preferences.pendingCwd ?? (profile ? agentProfilesStore.defaultWorkspace : undefined),
 			reasoningEffort: this.preferences.pendingReasoningEffort,
 			...(profilePolicy ?? this.preferences.getToolPolicySnapshot())
 		});
