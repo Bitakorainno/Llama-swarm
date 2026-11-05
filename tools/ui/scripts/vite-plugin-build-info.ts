@@ -1,17 +1,36 @@
 import { BUILD_CONFIG } from '../src/lib/constants/pwa.constants';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { resolve } from 'path';
 import type { Plugin } from 'vite';
 
 let processed = false;
 
 const OUTPUT_DIR = process.env.LLAMA_UI_OUT_DIR ?? BUILD_CONFIG.OUTPUT_DIR;
+const VERSION_FILE = fileURLToPath(new URL('../build-version.txt', import.meta.url));
+
+function resolveBuildNumber(): string {
+	const fromEnv = process.env.LLAMA_BUILD_NUMBER?.trim();
+
+	if (fromEnv) return fromEnv;
+
+	try {
+		const fromFile = readFileSync(VERSION_FILE, 'utf-8').trim();
+
+		if (fromFile) return fromFile;
+	} catch {
+		// fall through to the placeholder below
+	}
+
+	return 'b0000';
+}
 
 /**
  * Write build.json with the llama.cpp release build number.
  *
- * LLAMA_BUILD_NUMBER is passed from CMake -> npm -> vite via env var.
- * Used for display of the current llama-server release (e.g. "b1234").
+ * LLAMA_BUILD_NUMBER is passed from CMake -> npm -> vite via env var. Local
+ * fork builds fall back to `build-version.txt` so a plain `npm run build`
+ * does not stamp the placeholder.
  */
 export function buildInfoPlugin(): Plugin {
 	return {
@@ -23,7 +42,7 @@ export function buildInfoPlugin(): Plugin {
 
 					processed = true;
 
-					const buildNumber = process.env.LLAMA_BUILD_NUMBER || 'b0000';
+					const buildNumber = resolveBuildNumber();
 					const outDir = resolve(OUTPUT_DIR);
 					const indexPath = resolve(outDir, 'index.html');
 

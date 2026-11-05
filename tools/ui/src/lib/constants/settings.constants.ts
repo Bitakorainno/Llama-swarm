@@ -380,6 +380,14 @@ export const SETTINGS_REGISTRY: SettingsSectionEntry[] = [
 		icon: ListRestart,
 		settings: [
 			{
+				defaultValue: '[]',
+				help: 'Perfiles personalizados en formato JSON [{id, label, description, systemPrompt, allowedTools, icon?, color?}].',
+				key: SETTINGS_KEYS.AGENT_PROFILES_CUSTOM,
+				label: 'Perfiles personalizados',
+				standaloneField: false,
+				type: SettingsFieldType.INPUT
+			},
+			{
 				defaultValue: '',
 				help: 'Default working directory applied when a chat starts with an agent profile and no directory was picked. Leave empty to use the server default.',
 				key: SETTINGS_KEYS.AGENTIC_WORKSPACE,

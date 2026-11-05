@@ -1610,7 +1610,7 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 
 		const allMessages = await conversationsStore.getConversationMessages(activeConv.id);
 		const rootMessage = allMessages.find((m) => m.type === MessageType.ROOT && m.parent === null);
-		const systemMessage = allMessages.find(
+		const profileMessages = allMessages.filter(
 			(m) =>
 				m.role === MessageRole.SYSTEM &&
 				m.type !== MessageType.ROOT &&
@@ -1618,20 +1618,34 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 				m.content.startsWith(PROFILE_PROMPT_MARKER)
 		);
 
-		if (!rootMessage || !systemMessage) return;
+		if (!rootMessage || !profileMessages.length) return;
 
-		const children = allMessages.filter((m) => m.parent === systemMessage.id).map((m) => m.id);
+		const childrenByParent: Record<string, string[]> = {};
 
-		for (const childId of children) {
+		for (const message of allMessages) {
+			if (!message.parent) continue;
+
+			const children = childrenByParent[message.parent] ?? [];
+
+			children.push(message.id);
+			childrenByParent[message.parent] = children;
+		}
+
+		const removed = new Set(profileMessages.map((message) => message.id));
+		const promoted = [...removed].flatMap((id) =>
+			(childrenByParent[id] ?? []).filter((childId) => !removed.has(childId))
+		);
+
+		for (const childId of promoted) {
 			await DatabaseService.updateMessage(childId, { parent: rootMessage.id });
 		}
 
 		await DatabaseService.updateMessage(rootMessage.id, {
 			children: rootMessage.children.flatMap((id: string) =>
-				id === systemMessage.id ? children : [id]
+				removed.has(id) ? (childrenByParent[id] ?? []) : [id]
 			)
 		});
-		await DatabaseService.deleteMessage(systemMessage.id);
+		for (const id of removed) await DatabaseService.deleteMessage(id);
 		await conversationsStore.refreshActiveMessages();
 	}
 

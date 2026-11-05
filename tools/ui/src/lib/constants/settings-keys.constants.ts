@@ -5,6 +5,7 @@
  * in settings field configurations to ensure consistency.
  */
 export const SETTINGS_KEYS = {
+	AGENT_PROFILES_CUSTOM: 'agentProfilesCustom',
 	AGENTIC_MAX_TURNS: 'agenticMaxTurns',
 	AGENTIC_WORKSPACE: 'agenticWorkspace',
 	ALWAYS_SHOW_SIDEBAR_ON_DESKTOP: 'alwaysShowSidebarOnDesktop',

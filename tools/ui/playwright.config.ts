@@ -9,7 +9,8 @@ export default defineConfig({
 	projects: [
 		{
 			name: 'chromium',
-			use: { ...devices['Desktop Chrome'] }
+			// system Chrome via PLAYWRIGHT_CHROMIUM_CHANNEL=chrome when the bundled browser is unavailable
+			use: { ...devices['Desktop Chrome'], channel: process.env.PLAYWRIGHT_CHROMIUM_CHANNEL }
 		}
 	],
 	reporter: 'line',
@@ -25,7 +26,8 @@ export default defineConfig({
 		command: 'npm run build && npx http-server ./dist -p 8181',
 		port: 8181,
 		reuseExistingServer: !process.env.CI,
-		timeout: 120000
+		// the build alone takes minutes on slower machines; 120s was not enough
+		timeout: 900000
 	},
 	workers: process.env.CI ? 1 : undefined
 });

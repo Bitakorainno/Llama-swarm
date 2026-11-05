@@ -6,6 +6,7 @@
 		SettingsChatImportExportTab,
 		SettingsChatMobileHeader,
 		SettingsChatToolsTab,
+		SettingsChatCustomProfilesSection,
 		SettingsFooter,
 		SettingsResetButton
 	} from '$lib/components/app/settings';
@@ -181,6 +182,10 @@
 								onConfigChange={handleConfigChange}
 								onThemeChange={handleThemeChange}
 							/>
+
+							{#if currentSection.slug === SETTINGS_SECTION_SLUGS.AGENTIC}
+								<SettingsChatCustomProfilesSection />
+							{/if}
 
 							{#if currentSection.slug === SETTINGS_SECTION_SLUGS.GENERAL}
 								<div class="flex justify-end gap-2">

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Check, Sparkles } from '@lucide/svelte';
+	import { Check } from '@lucide/svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { AGENT_PROFILES } from '$lib/constants';
+	import { agentProfileColor, agentProfileIcon } from '$lib/constants';
 	import { agentProfilesStore, chatStore, conversationsStore } from '$lib/stores';
 	import type { AgentProfileId } from '$lib/types';
 
@@ -17,6 +17,8 @@
 		conversationsStore.activeConversation?.agentProfileId ?? agentProfilesStore.pendingProfileId
 	);
 	const active = $derived(agentProfilesStore.get(activeId));
+	const ActiveIcon = $derived(agentProfileIcon(active?.icon));
+	const activePalette = $derived(agentProfileColor(active?.color));
 
 	async function select(id: AgentProfileId | null) {
 		if (applying) return;
@@ -45,7 +47,7 @@
 					{disabled}
 					type="button"
 				>
-					<Sparkles class="w-3.5 h-3.5" />
+					<ActiveIcon class="w-3.5 h-3.5 {active ? activePalette.textClass : ''}" />
 
 					<span class="max-w-64 truncate">{active?.label ?? 'Modo'}</span>
 				</button>
@@ -53,11 +55,14 @@
 		</DropdownMenu.Trigger>
 
 		<DropdownMenu.Content align="start" class="w-72" side="top">
-			{#each AGENT_PROFILES as profile (profile.id)}
+			{#each agentProfilesStore.profiles as profile (profile.id)}
+				{@const ItemIcon = agentProfileIcon(profile.icon)}
+				{@const palette = agentProfileColor(profile.color)}
 				<DropdownMenu.Item
 					class="flex cursor-pointer items-start gap-2"
 					onclick={() => select(profile.id)}
 				>
+					<ItemIcon class="mt-0.5 size-4 shrink-0 {palette.textClass}" />
 					<div class="flex min-w-0 flex-col">
 						<span class="text-sm font-medium">{profile.label}</span>
 
@@ -65,7 +70,7 @@
 					</div>
 
 					{#if activeId === profile.id}
-						<Check class="ml-auto size-4 shrink-0" />
+						<Check class="ml-auto size-4 shrink-0 self-center" />
 					{/if}
 				</DropdownMenu.Item>
 			{/each}

@@ -19,7 +19,8 @@ const browserBaseConfig: any = {
 	instances: [{ browser: 'chromium' }],
 	provider: playwright({
 		launchOptions: {
-			args: ['--no-sandbox']
+			args: ['--no-sandbox'],
+			channel: process.env.PLAYWRIGHT_CHROMIUM_CHANNEL
 		}
 	})
 };

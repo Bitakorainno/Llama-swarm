@@ -1,0 +1,106 @@
+name: UI Agent Modes
+
+# Fork-specific checks: agent profiles UI, the MCP orchestrator and the
+# custom-profile e2e flow. Runs on fork/* branches only.
+
+on:
+  push:
+    branches:
+      - 'fork/*'
+    paths:
+      - '.github/workflows/ui-agent-modes.yml'
+      - 'tools/ui/**'
+      - 'tools/orchestrator_mcp.py'
+      - 'tools/tests/**'
+      - 'tools/prompts/**'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - 'fork/*'
+    paths:
+      - '.github/workflows/ui-agent-modes.yml'
+      - 'tools/ui/**'
+      - 'tools/orchestrator_mcp.py'
+      - 'tools/tests/**'
+      - 'tools/prompts/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ui-agent-modes:
+    name: Check, unit and orchestrator tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tools/ui
+
+      - name: Type check
+        run: npm run check
+        working-directory: tools/ui
+
+      - name: Agent profiles unit tests
+        # tests/unit/agent-profiles.test.ts covers the fork's custom-profiles surface;
+        # the whole unit project has 3 pre-existing environment-sensitive failures on
+        # non-en-US machines, so CI keeps the fork-scoped file green instead
+        run: npx vitest run --project=unit tests/unit/agent-profiles.test.ts --pool=forks --maxWorkers=1
+        working-directory: tools/ui
+
+      - name: Install Python test dependencies
+        run: python -m pip install pytest requests
+
+      - name: Orchestrator MCP tests
+        run: python -m pytest tools/tests/test_orchestrator_mcp.py -v
+        working-directory: tools/tests
+        env:
+          PYTHONUTF8: '1'
+
+  e2e-agent-profiles:
+    name: E2E agent profile flow
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tools/ui
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: tools/ui
+
+      - name: Run E2E agent profile test
+        # playwright.config.ts builds the UI and serves dist/ on port 8181 itself
+        run: npm run test:e2e -- tests/e2e/agent-profiles.e2e.ts
+        working-directory: tools/ui
+        env:
+          CI: true

@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <iterator>
 #include <unordered_set>
+#include <set>
 #include <tuple>
 #include <functional>
 #include <memory>
@@ -1236,6 +1237,308 @@ struct server_tool_grep_search : server_tool {
 };
 
 //
+// exec_shell_command guards
+//
+// Two optional, host-side guards. They are not a sandbox: a motivated command can
+// obfuscate itself past any lexical check. Real isolation comes from --tools-runtime.
+//
+//  1. LLAMA_TOOLS_ALLOWLIST: comma-separated binary names; when set, every command in
+//     a pipeline or sequence must start with an allowed binary. Path components are
+//     stripped and Windows executable extensions ignored; comparison is case-insensitive.
+//  2. Workspace restriction: when a workspace is set via x-tool-cwd (and --tools-runtime
+//     is not in use, because then paths live in the isolate's namespace, not the host's),
+//     every token that escapes the workspace is rejected: absolute paths, ~ paths and
+//     tokens whose ".." segments resolve outside it.
+//
+
+static const std::string & exec_shell_allowlist_env() {
+    static const std::string value = [] {
+        const char * raw = std::getenv("LLAMA_TOOLS_ALLOWLIST");
+        return raw ? std::string(raw) : std::string();
+    }();
+    return value;
+}
+
+static std::string exec_shell_to_lower(const std::string & input) {
+    std::string out = input;
+    for (auto & c : out) c = (char) std::tolower((unsigned char) c);
+    return out;
+}
+
+// "C:\tools\git.BAT" -> "git"; comparisons always happen on the plain binary name
+static std::string exec_shell_binary_key(std::string token) {
+    token = exec_shell_to_lower(std::move(token));
+    const size_t slash = token.find_last_of("/\\");
+    if (slash != std::string::npos) {
+        token = token.substr(slash + 1);
+    }
+    static const char * const EXTENSIONS[] = {".exe", ".com", ".bat", ".cmd", ".ps1"};
+    for (const char * ext : EXTENSIONS) {
+        const size_t len = strlen(ext);
+        if (token.size() > len && token.compare(token.size() - len, len, ext) == 0) {
+            return token.substr(0, token.size() - len);
+        }
+    }
+    return token;
+}
+
+// quote-aware word splitting; quotes are dropped, escapes are not simulated.
+// a validator's tokenizer, not a shell
+static std::vector<std::string> exec_shell_words(const std::string & line) {
+    std::vector<std::string> words;
+    std::string cur;
+    char quote = '\0';
+    bool in_token = false;
+    for (const char c : line) {
+        if (quote != '\0') {
+            if (c == quote) {
+                quote = '\0';
+            } else {
+                cur.push_back(c);
+            }
+            continue;
+        }
+        if (c == '\'' || c == '"') {
+            quote = c;
+            in_token = true;
+            continue;
+        }
+        if (c == ' ' || c == '\t') {
+            if (in_token) {
+                words.push_back(cur);
+                cur.clear();
+                in_token = false;
+            }
+            continue;
+        }
+        cur.push_back(c);
+        in_token = true;
+    }
+    if (in_token) {
+        words.push_back(cur);
+    }
+    return words;
+}
+
+// splits "a && b || c | d ; e ( f )" into segments, honoring quotes; ';' and '&' are
+// always separators: PowerShell and cmd both accept '&', and the allowlist must not be
+// bypassable by a POSIX-style command on any platform
+static std::vector<std::string> exec_shell_segments(const std::string & command) {
+    std::vector<std::string> segments;
+    std::string cur;
+    char quote = '\0';
+    const auto flush = [&segments, &cur]() {
+        const size_t begin = cur.find_first_not_of(" \t\r\n");
+        if (begin != std::string::npos) {
+            const size_t end = cur.find_last_not_of(" \t\r\n");
+            segments.emplace_back(cur.substr(begin, end - begin + 1));
+        }
+        cur.clear();
+    };
+    for (size_t i = 0; i < command.size(); i++) {
+        const char c = command[i];
+        if (quote != '\0') {
+            cur.push_back(c);
+            if (c == quote) {
+                quote = '\0';
+            }
+            continue;
+        }
+        if (c == '\'' || c == '"') {
+            quote = c;
+            cur.push_back(c);
+            continue;
+        }
+        if (c == '&' || c == '|') {
+            const char next = i + 1 < command.size() ? command[i + 1] : '\0';
+            if (next == c) {
+                i++;
+            }
+            flush();
+            continue;
+        }
+        if (c == ';' || c == '\n' || c == '\r' || c == '(' || c == ')') {
+            flush();
+            continue;
+        }
+        cur.push_back(c);
+    }
+    flush();
+    return segments;
+}
+
+// "NAME=value" at the start of a segment (POSIX env assignment prefix); its value is data
+static bool exec_shell_is_assignment(const std::string & token) {
+    const size_t eq = token.find('=');
+    if (eq == std::string::npos || eq == 0) {
+        return false;
+    }
+    if (!std::isalpha((unsigned char) token[0]) && token[0] != '_') {
+        return false;
+    }
+    for (size_t i = 1; i < eq; i++) {
+        const char c = token[i];
+        if (!std::isalnum((unsigned char) c) && c != '_') {
+            return false;
+        }
+    }
+    return true;
+}
+
+// '/' separators everywhere, "." and ".." collapsed lexically; keeps a drive letter as a first segment
+static std::string exec_shell_normalize_posix(const std::string & input) {
+    std::string path = input;
+    std::replace(path.begin(), path.end(), '\\', '/');
+    const bool absolute = !path.empty() && path[0] == '/';
+    std::vector<std::string> parts;
+    size_t i = 0;
+    while (i < path.size()) {
+        const size_t j = path.find('/', i);
+        const size_t end = j == std::string::npos ? path.size() : j;
+        const std::string segment = path.substr(i, end - i);
+        if (segment.empty() || segment == ".") {
+            // skip
+        } else if (segment == "..") {
+            if (!parts.empty() && parts.back() != "..") {
+                parts.pop_back();
+            } else if (!absolute) {
+                parts.push_back(segment);
+            }
+        } else {
+            parts.push_back(segment);
+        }
+        if (j == std::string::npos) {
+            break;
+        }
+        i = j + 1;
+    }
+    std::string out = absolute ? "/" : "";
+    for (size_t k = 0; k < parts.size(); k++) {
+        if (k != 0) {
+            out += '/';
+        }
+        out += parts[k];
+    }
+    if (out.empty()) {
+        out = absolute ? "/" : ".";
+    }
+    return out;
+}
+
+// containment: case-insensitive on Windows (drive letters included), case-sensitive on POSIX
+static bool exec_shell_path_within(const std::string & base, const std::string & candidate) {
+    std::string b = exec_shell_normalize_posix(base);
+    std::string c = exec_shell_normalize_posix(candidate);
+#if defined(_WIN32)
+    b = exec_shell_to_lower(b);
+    c = exec_shell_to_lower(c);
+#endif
+    if (c == b) {
+        return true;
+    }
+    if (!b.empty() && b.back() != '/') {
+        b += '/';
+    }
+    return c.size() > b.size() && c.compare(0, b.size(), b) == 0;
+}
+
+// workspace check for a single unquoted token; the workspace itself is the boundary
+static bool exec_shell_candidate_in_cwd(const std::string & candidate, const std::string & cwd) {
+    if (candidate.empty()) {
+        return true;
+    }
+    if (candidate[0] == '~') {
+        return false; // expands to $HOME, outside the workspace here by definition
+    }
+    // drive-relative "c:foo" resolves against that drive's last-used directory: not the workspace
+    if (candidate.size() >= 2 && std::isalpha((unsigned char) candidate[0]) && candidate[1] == ':' &&
+        (candidate.size() < 3 || (candidate[2] != '/' && candidate[2] != '\\'))) {
+        return false;
+    }
+    const bool absolute =
+        candidate[0] == '/' || candidate[0] == '\\' ||
+        (candidate.size() >= 3 && std::isalpha((unsigned char) candidate[0]) && candidate[1] == ':');
+    if (absolute) {
+        return exec_shell_path_within(cwd, candidate);
+    }
+    return exec_shell_path_within(cwd, cwd + "/" + candidate);
+}
+
+// returns "" when the command may run, otherwise a human-readable rejection reason
+static std::string exec_shell_guard(const std::string & command,
+                                    const std::string & cwd,
+                                    const std::string & runtime) {
+    const std::vector<std::string> segments = exec_shell_segments(command);
+    if (segments.empty()) {
+        return "empty command";
+    }
+
+    // allowlist: the effective binary (first non-assignment word) of every segment must be allowed
+    std::set<std::string> allowed;
+    const std::string allowlist = exec_shell_allowlist_env();
+    if (!allowlist.empty()) {
+        size_t i = 0;
+        while (i < allowlist.size()) {
+            const size_t j = allowlist.find(',', i);
+            std::string item = allowlist.substr(i, j == std::string::npos ? j : j - i);
+            const size_t b = item.find_first_not_of(" \t");
+            const size_t e = item.find_last_not_of(" \t");
+            if (b != std::string::npos) {
+                allowed.insert(exec_shell_binary_key(item.substr(b, e - b + 1)));
+            }
+            if (j == std::string::npos) {
+                break;
+            }
+            i = j + 1;
+        }
+    }
+
+    // the isolate owns the namespace when a runtime is configured: nothing host-side to check
+    const bool host_workspace = !cwd.empty() && runtime.empty();
+    const bool allowlist_active = !allowed.empty();
+
+    for (const std::string & segment : segments) {
+        const std::vector<std::string> words = exec_shell_words(segment);
+        if (words.empty()) {
+            continue;
+        }
+
+        size_t bi = 0;
+        while (bi < words.size() && exec_shell_is_assignment(words[bi])) {
+            bi++;
+        }
+
+        if (allowlist_active && bi < words.size()) {
+            const std::string key = exec_shell_binary_key(words[bi]);
+            if (allowed.find(key) == allowed.end()) {
+                return "command blocked: '" + key + "' is not in LLAMA_TOOLS_ALLOWLIST";
+            }
+        }
+
+        if (!host_workspace) {
+            continue;
+        }
+
+        // option-style tokens carry a value after '='; validate both halves
+        for (size_t wi = bi; wi < words.size(); wi++) {
+            const std::string & word = words[wi];
+            const size_t eq = word.find('=');
+            if (eq != std::string::npos && eq + 1 < word.size()) {
+                if (!exec_shell_candidate_in_cwd(word.substr(eq + 1), cwd)) {
+                    return "command blocked: path escapes the workspace: " + word;
+                }
+                continue;
+            }
+            if (!exec_shell_candidate_in_cwd(word, cwd)) {
+                return "command blocked: path escapes the workspace: " + word;
+            }
+        }
+    }
+
+    return "";
+}
+
+//
 // exec_shell_command: run an arbitrary shell command
 //
 
@@ -1256,7 +1559,7 @@ struct server_tool_exec_shell_command : server_tool {
             {"type", "function"},
             {"function", {
                 {"name", name},
-                {"description", "Execute a shell command and return its output (stdout and stderr combined)."},
+                {"description", "Execute a shell command and return its output (stdout and stderr combined). When the server sets LLAMA_TOOLS_ALLOWLIST or a workspace boundary (x-tool-cwd), a command that violates either is rejected before it runs."},
                 {"parameters", {
                     {"type", "object"},
                     {"properties", {
@@ -1277,6 +1580,19 @@ struct server_tool_exec_shell_command : server_tool {
 
         timeout    = std::min(timeout,    SERVER_TOOL_EXEC_SHELL_COMMAND_MAX_TIMEOUT);
         max_output = std::min(max_output, SERVER_TOOL_EXEC_SHELL_COMMAND_MAX_OUTPUT_SIZE);
+
+        const std::string guard_error = exec_shell_guard(
+            command,
+            json_value(params, "cwd", std::string()),
+            json_value(params, "runtime", std::string()));
+        if (!guard_error.empty()) {
+            if (st) {
+                st->push(string_format("[blocked: %s]\n", guard_error.c_str()));
+                st->push("[exit code: 126]");
+                return json();
+            }
+            return {{"error", guard_error}};
+        }
 
         // an isolate is always POSIX regardless of host OS, so it always gets `sh -c`
 #ifdef _WIN32

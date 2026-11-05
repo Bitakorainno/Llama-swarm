@@ -1,6 +1,12 @@
 $ErrorActionPreference = 'Stop'
 
-Push-Location (Join-Path $PSScriptRoot 'tools\ui')
+$ui = Join-Path $PSScriptRoot 'tools\ui'
+$version = (Get-Content (Join-Path $ui 'build-version.txt') -Raw).Trim()
+if (-not $version) { throw 'build-version.txt is empty' }
+
+$env:LLAMA_BUILD_NUMBER = $version
+
+Push-Location $ui
 
 try {
 	npm run check
@@ -9,8 +15,10 @@ try {
 	npm run build
 	if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-	Set-Content -Path '.\dist\build.json' -Value '{"version":"b11963"}' -Encoding ascii
-	Write-Host 'UI lista en tools\ui\dist (build.json = b11963)'
+	$built = (Get-Content '.\dist\build.json' -Raw | ConvertFrom-Json).version
+	if ($built -ne $version) { throw "build.json version mismatch: $built != $version" }
+
+	Write-Host "UI lista en tools\ui\dist (build.json = $version)"
 } finally {
 	Pop-Location
 }

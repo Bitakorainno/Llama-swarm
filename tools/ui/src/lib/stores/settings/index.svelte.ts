@@ -193,16 +193,34 @@ class SettingsStore {
 	 * @param data - The exported settings object
 	 */
 	importSettings(data: SettingsExportType): void {
-		if (!browser) return;
-
 		if (!data || !data.config) {
 			throw new Error('Invalid settings data: missing config');
 		}
 
 		// Restore config (theme is included in config)
+		const importedConfig = { ...data.config };
+
+		if (SETTINGS_KEYS.AGENT_PROFILES_CUSTOM in importedConfig) {
+			const rawCustom = importedConfig[SETTINGS_KEYS.AGENT_PROFILES_CUSTOM];
+
+			if (typeof rawCustom === 'string' && rawCustom.trim()) {
+				try {
+					const parsed = JSON.parse(rawCustom);
+
+					if (!Array.isArray(parsed)) {
+						importedConfig[SETTINGS_KEYS.AGENT_PROFILES_CUSTOM] = '[]';
+					}
+				} catch {
+					importedConfig[SETTINGS_KEYS.AGENT_PROFILES_CUSTOM] = '[]';
+				}
+			} else {
+				importedConfig[SETTINGS_KEYS.AGENT_PROFILES_CUSTOM] = '[]';
+			}
+		}
+
 		this.config = {
 			...SETTING_CONFIG_DEFAULT,
-			...data.config
+			...importedConfig
 		};
 
 		// Restore user overrides (derived state — may be stale if server defaults differ)
