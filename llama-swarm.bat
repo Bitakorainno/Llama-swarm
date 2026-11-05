@@ -129,7 +129,9 @@ echo.
 echo Iniciando chat en terminal con el preset "%PRESET_NAME%"...
 echo (Escribe /exit o Ctrl+C para salir)
 echo.
-"%BASEDIR%dist\llama-completion.exe" %COMMON_ARGS% --jinja -cnv -sys "Eres un asistente util y preciso."
+set "LLAMA_COMPLETION_BIN=%~dp0dist\llama-completion.exe"
+if not exist "%LLAMA_COMPLETION_BIN%" set "LLAMA_COMPLETION_BIN=H:\llama-b11963-bin-win-vulkan-x64\llama-completion.exe"
+"%LLAMA_COMPLETION_BIN%" %COMMON_ARGS% --jinja -cnv -sys "Eres un asistente util y preciso."
 goto :END
 
 :SERVER
@@ -162,7 +164,14 @@ if exist "%FORK_UI%\index.html" (
 ) else (
     echo Interfaz: UI embebida (no se encontro el build del fork)
 )
-"%BASEDIR%dist\llama-server-fork.exe" %COMMON_ARGS% --jinja !TOOLS_ARGS! --mcp-servers-config "%BASEDIR%mcp.json" --host 127.0.0.1 --port !PORT! !UI_ARGS!
+set "LLAMA_SERVER_BIN=H:\llama-b11963-bin-win-vulkan-x64\llama-server.exe"
+if not exist "%LLAMA_SERVER_BIN%" set "LLAMA_SERVER_BIN=%~dp0dist\llama-server-fork.exe"
+if not exist "%LLAMA_SERVER_BIN%" (
+    echo [ERROR] No se encontro llama-server.exe
+    pause
+    exit /b 1
+)
+"%LLAMA_SERVER_BIN%" %COMMON_ARGS% --jinja !TOOLS_ARGS! --mcp-servers-config "%BASEDIR%mcp.json" --host 127.0.0.1 --port !PORT! !UI_ARGS!
 goto :END
 
 :END

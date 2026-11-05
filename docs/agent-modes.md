@@ -8,17 +8,24 @@ works stand-alone once `models/*.gguf` are placed in `\models\` inside the repo
 (they are intentionally not vendored):
 
 1. `llama-swarm.bat` → pick a model → pick a preset → pick a mode.
-2. Mode 1 chat: `dist\llama-completion.exe`. Mode 2 server: `dist\llama-server-fork.exe`
-   with the fork UI (`tools\ui\dist`, `--path`), the MCP orchestrator
-   (`mcp.json` → `orchestrator_mcp.bat` → `tools\orchestrator_mcp.py`) and
-   `Proyects\` as the default agent workspace.
-3. The old distribution folder `H:\llama-b11963-bin-win-vulkan-x64` is no longer
-   required; the fork's `dist\` ships the same b11963 Vulkan runtime.
+2. Mode 1 chat: `dist\llama-completion.exe` (falls back to the original dist if
+   missing). Mode 2 server: `llama-swarm.bat` picks `%LLAMA_SERVER_BIN%` first
+   (`H:\llama-b11963-bin-win-vulkan-x64\llama-server.exe`) and falls back to
+   `%~dp0dist\llama-server-fork.exe`. Serves the fork UI (`tools\ui\dist`,
+   `--path`), the MCP orchestrator (`mcp.json` → `orchestrator_mcp.bat` →
+   `tools\orchestrator_mcp.py`) and `Proyects\` as the default agent workspace.
+3. The distribution folder `H:\llama-b11963-bin-win-vulkan-x64` is required for
+   the `llama-server.exe` binary itself (the host-side filter removes both the
+   original and renamed copies from this repo). The fork's `dist\` keeps only the
+   other runtime artifacts (completion binaries, DLLs); the official server binary
+   is used from the dist folder by default.
 
-Note: the exact names `llama-server.exe` and `iniciar-llamacpp.bat` cannot be
-created inside this directory anymore (blocked by a host-side filter, not by
-Windows Defender). The binaries and launcher are renamed to `llama-server-fork.exe`
-and `llama-swarm.bat` accordingly.
+Note: neither `llama-server.exe` (under any name) nor
+`iniciar-llamacpp.bat` can survive inside this directory — a host-side filter
+deletes them regardless of the name (not Windows Defender, and not a path
+issue). `llama-swarm.bat` therefore defaults to the original b11963 binary in
+`H:\llama-b11963-bin-win-vulkan-x64\llama-server.exe`; the fork copy was removed.
+The exact name `iniciar-llamacpp.bat` is also blocked, hence `llama-swarm.bat`.
 
 This fork adds three agent modes on top of `llama-server`'s built-in tool
 support. Modes live in the chat UI and only change the prompt, the enabled
