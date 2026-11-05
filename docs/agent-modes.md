@@ -1,5 +1,19 @@
 # Agent modes (fork)
 
+## Running the app
+
+The repo root is the app root. `iniciar-llamacpp.bat` (untracked, local) is the
+launcher and works stand-alone once `models/*.gguf` are placed in
+`\models\` inside the repo (they are intentionally not vendored):
+
+1. `iniciar-llamacpp.bat` → pick a model → pick a preset → pick a mode.
+2. Mode 1 chat: `dist\llama-completion.exe`. Mode 2 server: `dist\llama-server.exe`
+   with the fork UI (`tools\ui\dist`, `--path`), the MCP orchestrator
+   (`mcp.json` → `orchestrator_mcp.bat` → `tools\orchestrator_mcp.py`) and
+   `Proyects\` as the default agent workspace.
+3. The old distribution folder `H:\llama-b11963-bin-win-vulkan-x64` is no longer
+   required; the fork's `dist\` ships the same b11963 Vulkan runtime.
+
 This fork adds three agent modes on top of `llama-server`'s built-in tool
 support. Modes live in the chat UI and only change the prompt, the enabled
 tools and the default working directory of a conversation.

@@ -185,3 +185,13 @@ token*.json
 !/dist/*.dll
 !/dist/*.exe
 
+
+# Local app workspace artifacts (moved from the old dist folder)
+/logs/
+/Proyectos/
+/Proyects/
+/models/
+agent_llamacpp.py
+readlines.py
+hola-mundo.html
+
