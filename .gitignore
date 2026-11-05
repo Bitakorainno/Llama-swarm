@@ -180,3 +180,8 @@ token*.json
 /test-results/
 /playwright-report/
 /blob-report/
+
+# Vendored llama-server runtime (b11963, Vulkan) used by the fork's distributed app
+!/dist/*.dll
+!/dist/*.exe
+

@@ -90,6 +90,18 @@ consumes notifications silently; progress is only surfaced to clients that
 request it (e.g. Claude Desktop) or in the orchestrator logs. The DAG and
 timeout machinery also works for clients that never see the stream.
 
+## Vendored runtime (dist/)
+
+`dist/` mirrors the minimum official llama.cpp `b11963` Vulkan build (server only)
+from the distribution folder: `llama-server(.exe)` + `llama-server-impl.dll`,
+`llama.dll`, `llama-common.dll`, `ggml*.dll`, `ggml-cpu-*.dll`, `ggml-vulkan.dll`,
+`mtmd.dll` and `libomp.dll`. It lets the fork run without a Vulkan toolchain on
+this machine. **Caveat:** those binaries are the unmodified upstream `b11963`
+build — they predate this fork, so the `exec_shell_command` guards
+(`LLAMA_TOOLS_ALLOWLIST` and the workspace restriction) and any other C++-side
+changes are **not** active in them. The UI, custom profiles and the orchestrator
+are active. A fork rebuilt from source (with the Vulkan SDK) supersedes `dist/`.
+
 ## Build version
 
 `tools/ui/build-version.txt` is the local fallback for `build.json`. The
