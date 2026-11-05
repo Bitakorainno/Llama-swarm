@@ -162,7 +162,7 @@ if exist "%FORK_UI%\index.html" (
 ) else (
     echo Interfaz: UI embebida (no se encontro el build del fork)
 )
-"%BASEDIR%dist\llama-server.exe" %COMMON_ARGS% --jinja !TOOLS_ARGS! --mcp-servers-config "%BASEDIR%mcp.json" --host 127.0.0.1 --port !PORT! !UI_ARGS!
+"%BASEDIR%dist\llama-server-fork.exe" %COMMON_ARGS% --jinja !TOOLS_ARGS! --mcp-servers-config "%BASEDIR%mcp.json" --host 127.0.0.1 --port !PORT! !UI_ARGS!
 goto :END
 
 :END

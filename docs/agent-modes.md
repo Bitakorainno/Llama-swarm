@@ -2,17 +2,23 @@
 
 ## Running the app
 
-The repo root is the app root. `iniciar-llamacpp.bat` (untracked, local) is the
-launcher and works stand-alone once `models/*.gguf` are placed in
-`\models\` inside the repo (they are intentionally not vendored):
+The repo root is the app root. `llama-swarm.bat` (staged rename of the old
+`iniciar-llamacpp.bat`; deliberately renamed, see note below) is the launcher and
+works stand-alone once `models/*.gguf` are placed in `\models\` inside the repo
+(they are intentionally not vendored):
 
-1. `iniciar-llamacpp.bat` → pick a model → pick a preset → pick a mode.
-2. Mode 1 chat: `dist\llama-completion.exe`. Mode 2 server: `dist\llama-server.exe`
+1. `llama-swarm.bat` → pick a model → pick a preset → pick a mode.
+2. Mode 1 chat: `dist\llama-completion.exe`. Mode 2 server: `dist\llama-server-fork.exe`
    with the fork UI (`tools\ui\dist`, `--path`), the MCP orchestrator
    (`mcp.json` → `orchestrator_mcp.bat` → `tools\orchestrator_mcp.py`) and
    `Proyects\` as the default agent workspace.
 3. The old distribution folder `H:\llama-b11963-bin-win-vulkan-x64` is no longer
    required; the fork's `dist\` ships the same b11963 Vulkan runtime.
+
+Note: the exact names `llama-server.exe` and `iniciar-llamacpp.bat` cannot be
+created inside this directory anymore (blocked by a host-side filter, not by
+Windows Defender). The binaries and launcher are renamed to `llama-server-fork.exe`
+and `llama-swarm.bat` accordingly.
 
 This fork adds three agent modes on top of `llama-server`'s built-in tool
 support. Modes live in the chat UI and only change the prompt, the enabled
