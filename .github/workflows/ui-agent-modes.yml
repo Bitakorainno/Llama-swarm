@@ -72,9 +72,6 @@ jobs:
 
       - name: Orchestrator MCP tests
         run: python -m pytest tools/tests/test_orchestrator_mcp.py -v
-        working-directory: tools/tests
-        env:
-          PYTHONUTF8: '1'
 
   e2e-agent-profiles:
     name: E2E agent profile flow

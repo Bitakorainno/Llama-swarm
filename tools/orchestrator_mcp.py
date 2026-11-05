@@ -772,11 +772,13 @@ def respond_error(request_id, code, message):
 
 
 def main():
-    try:
-        sys.stdin.reconfigure(encoding="utf-8")
-        sys.stdout.reconfigure(encoding="utf-8")
-    except AttributeError:
-        pass
+    for stream in (sys.stdin, sys.stdout):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8")
+            except Exception:
+                pass
 
     modes = load_modes()
     log(f"listo. llama-server={LLAMA_URL} workspace={DEFAULT_WORKSPACE or '(cwd)'}")
@@ -813,7 +815,9 @@ def main():
             elif method == "tools/call":
                 name = params.get("name", "")
                 arguments = params.get("arguments") or {}
-                meta = params.get("_meta") if isinstance(params.get("_meta"), dict) else {}
+                meta = params.get("_meta")
+                if not isinstance(meta, dict):
+                    meta = {}
                 progress_token = meta.get("progressToken")
                 if not isinstance(progress_token, (str, int, float)):
                     progress_token = None
