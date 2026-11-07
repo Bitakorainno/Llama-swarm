@@ -18,7 +18,7 @@
 {#snippet submitButton(props = {})}
 	<Button
 		class={[
-			'md:h-8 md:w-8 h-9 w-9 rounded-full p-0',
+			'md:h-8 md:w-8 h-9 w-9 rounded-full p-0 transition-transform active:scale-95 disabled:bg-primary/25 disabled:text-primary-foreground/70 disabled:dark:bg-primary/30 disabled:hover:bg-primary/25 disabled:dark:hover:bg-primary/30',
 			showErrorState &&
 				'bg-red-400/10 text-red-400 hover:bg-red-400/20 hover:text-red-400 disabled:opacity-100'
 		]}

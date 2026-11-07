@@ -165,12 +165,16 @@ el composer sin cambiar su API:
 
 ### Pendiente
 
-- [ ] Pulido fino pendiente: submit/chips del composer (estados hover/disabled),
-      tabs activos, bloque "processing info", badges de modelo finos.
-- [ ] Revisión visual de bulk: modelos (desktop+mobile), settings (claro+oscuro),
-      dropdowns (modo, modelos) y sesión de chat con mensajes reales.
-- [ ] Test e2e tras rebuild (puede resucitar el PWA cache si hay SW viejo: Reload).
-- [ ] Commit + push al repo (`Llama-swarm`, rama `fork/agent-profiles`).
+- [x] Pulido fino pendiente: submit/chips del composer (estados hover/disabled),
+      tabs activos, bloque "processing info", badges de modelo finos — hecho.
+- [x] Revisión visual de bulk: modelos (desktop+mobile), settings (claro+oscuro),
+      dropdowns (modo, modelos) y sesión de chat con mensajes reales — capturas
+      de QA light+dark realizadas (empty state, conversación con respuesta y
+      tool-call, settings Agentic).
+- [x] Test e2e tras rebuild — passed (`1 passed`; via `npm run test:e2e -- tests/e2e/agent-profiles.e2e.ts`).
+- [x] Commit + push al repo (`Llama-swarm`, rama `fork/agent-profiles`) — commit `1b8cad9c9`.
+- [x] Verificación completa: `npm run check` 0/0, cliente 207 passed, unit
+      perfiles 11 passed, orquestador 12 passed, `build-ui.ps1` OK (`build.json = b11963`).
 
 ## 7. Restricciones
 
