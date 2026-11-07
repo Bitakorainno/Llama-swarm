@@ -19,6 +19,7 @@
 
 // AGENT PROFILES (planner / developer / orchestrator)
 export { agentProfilesStore } from './agent-profiles.svelte';
+export { draftRequestStore } from './chat/draft-request.svelte';
 
 // CHAT / MESSAGING
 export { chatStore } from './chat/index.svelte';

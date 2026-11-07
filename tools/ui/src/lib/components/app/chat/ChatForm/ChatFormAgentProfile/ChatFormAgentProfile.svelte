@@ -41,8 +41,8 @@
 			{#snippet child({ props })}
 				<button
 					{...props}
-					class="flex min-w-0 w-auto items-center gap-1 rounded-md px-2 py-1 text-xs backdrop-blur-2xl {active
-						? 'text-foreground'
+					class="flex min-w-0 w-auto items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs backdrop-blur-2xl transition-colors hover:bg-sidebar-accent {active
+						? 'text-primary font-medium'
 						: 'text-muted-foreground'}"
 					{disabled}
 					type="button"

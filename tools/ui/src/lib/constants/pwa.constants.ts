@@ -17,7 +17,8 @@ export const THEME_COLORS = {
 	BACKGROUND_DARK: '#111111',
 	BACKGROUND_LIGHT: 'white',
 	DARK: '#0d0d0d',
-	LIGHT: '#ffffff',
+	LIGHT: '#f3f4f7',
+	STUDIO_DARK: '#0f1117',
 	TITLE_UPDATE_ALERT: {
 		BG_DARK: 'zinc-800',
 		BG_LIGHT: 'white',
@@ -52,7 +53,7 @@ export const APPLE_ASSETS = {
 } as const;
 
 export const PWA_MANIFEST = {
-	background_color: THEME_COLORS.BACKGROUND_LIGHT,
+	background_color: THEME_COLORS.LIGHT,
 	description: 'Local AI chat interface powered by llama.cpp',
 	display: 'standalone' as const,
 	icons: [
@@ -69,7 +70,7 @@ export const PWA_MANIFEST = {
 	name: APP_NAME,
 	short_name: APP_NAME,
 	start_url: './',
-	theme_color: THEME_COLORS.BACKGROUND_LIGHT
+	theme_color: THEME_COLORS.LIGHT
 };
 
 export const PWA_ICON_PATHS = {

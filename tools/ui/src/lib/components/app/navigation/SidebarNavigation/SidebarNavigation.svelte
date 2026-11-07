@@ -28,7 +28,15 @@
 	import { useKeyboardShortcuts } from '$lib/hooks/use-keyboard-shortcuts.svelte';
 	import { useMarqueeSelection } from '$lib/hooks/use-marquee-selection.svelte';
 	import { RouterService } from '$lib/services/router.service';
-	import { chatStore, conversationsStore, deviceStore, settingsStore, uiStore } from '$lib/stores';
+	import {
+		chatStore,
+		conversationsStore,
+		deviceStore,
+		serverStore,
+		settingsStore,
+		uiStore,
+		versionStore
+	} from '$lib/stores';
 	import { buildConversationTree, remToPx } from '$lib/utils';
 	import { circIn } from 'svelte/easing';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -495,35 +503,56 @@
 			'md:transition-[width,padding] duration-200 ease-out',
 			uiStore.isSidebarResizing && 'md:duration-0',
 			isSettling && 'md:duration-300 md:ease-[cubic-bezier(0.34,1.56,0.64,1)]',
-			isStripExpanded && 'md:w-(--sidebar-width) md:bg-muted/60 md:backdrop-blur-xl shadow-md',
+			isStripExpanded &&
+				'md:w-(--sidebar-width) md:bg-sidebar/85 md:backdrop-blur-xl md:shadow-[0_8px_30px_-18px_oklch(0_0_0/0.55)] md:ring-1 md:ring-sidebar-border/80',
 			!isStripExpanded && 'md:w-12',
 			uiStore.isSidebarExpanded && 'is-expanded'
 		]}
 	>
 		<div class="px-2 flex items-center justify-between">
-			<div
-				class="relative"
-				onmouseenter={() => (logoHovered = true)}
-				onmouseleave={() => (logoHovered = false)}
-				role="button"
-				tabindex="0"
-			>
-				<ActionIcon
-					ariaLabel={uiStore.isSidebarExpanded ? 'Go to start' : 'Expand navigation'}
-					class="{uiStore.isSidebarExpanded
-						? 'bg-muted! md:bg-foreground/5!'
-						: 'bg-transparent!'} md:h-9 md:w-9 h-10 w-10 rounded-full md:hover:bg-foreground/10! pointer-events-auto"
-					href={uiStore.isSidebarExpanded ? ROUTES.START : undefined}
-					icon={!uiStore.isSidebarExpanded && logoHovered && innerWidth > 768
-						? PanelLeftOpen
-						: Logo}
-					iconSize="h-4.5 w-4.5 md:h-4 md:w-4"
-					onclick={uiStore.isSidebarExpanded ? undefined : toggleExpandedMode}
-					size="lg"
-					tooltip={uiStore.isSidebarExpanded ? undefined : 'Open Sidebar'}
-					tooltipSide={TooltipSide.RIGHT}
-				/>
-			</div>
+			{#if uiStore.isSidebarExpanded || isOnMobile}
+				<a
+					aria-label="llama-swarm home"
+					class="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl px-1.5 py-1.5 transition-colors hover:bg-sidebar-accent"
+					href={ROUTES.START}
+				>
+					<span
+						class="flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-[oklch(0.58_0.17_32)] shadow-[0_2px_12px_-3px_oklch(0.79_0.155_70/0.5)]"
+					>
+						<Logo class="h-4.5 w-4.5 text-primary-foreground [&_svg]:fill-current" />
+					</span>
+
+					<span class="flex min-w-0 flex-col leading-none">
+						<span class="text-[13px] font-semibold tracking-tight"
+							>llama<span class="text-primary">-swarm</span></span
+						>
+
+						<span
+							class="mt-1 font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground"
+							>local studio</span
+						>
+					</span>
+				</a>
+			{:else}
+				<div
+					class="relative"
+					onmouseenter={() => (logoHovered = true)}
+					onmouseleave={() => (logoHovered = false)}
+					role="button"
+					tabindex="0"
+				>
+					<ActionIcon
+						ariaLabel={logoHovered ? 'Expand navigation' : 'llama-swarm'}
+						class="md:h-9 md:w-9 h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-[oklch(0.58_0.17_32)] text-primary-foreground shadow-[0_2px_12px_-3px_oklch(0.79_0.155_70/0.5)] md:hover:brightness-110"
+						icon={logoHovered && innerWidth > 768 ? PanelLeftOpen : Logo}
+						iconSize="h-4.5 w-4.5 md:h-4 md:w-4 [&_svg]:fill-current"
+						onclick={toggleExpandedMode}
+						size="lg"
+						tooltip="Open Sidebar"
+						tooltipSide={TooltipSide.RIGHT}
+					/>
+				</div>
+			{/if}
 
 			{#if isOnMobile || uiStore.isSidebarExpanded}
 				<div
@@ -600,6 +629,24 @@
 				</div>
 			{/if}
 		</div>
+
+		{#if uiStore.isSidebarExpanded && !isOnMobile}
+			<div class="mt-1 border-t border-sidebar-border/60 px-4 pt-2 pb-1.5">
+				<div class="flex items-center gap-2 text-[10px] text-muted-foreground">
+					<span
+						class="size-1.5 shrink-0 rounded-full {serverStore.props && !serverStore.error
+							? 'bg-emerald-500'
+							: serverStore.error
+								? 'bg-red-500'
+								: 'bg-muted-foreground/60 animate-pulse'}"
+					></span>
+
+					<span class="font-mono">llama-server</span>
+
+					<span class="font-mono text-primary/90">{versionStore.build ?? 'b11963'}</span>
+				</div>
+			</div>
+		{/if}
 
 		{#if uiStore.isSidebarExpanded && !isOnMobile}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->

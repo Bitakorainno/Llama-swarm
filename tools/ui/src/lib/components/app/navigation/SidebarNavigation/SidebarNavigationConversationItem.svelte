@@ -179,8 +179,8 @@
 </script>
 
 <button
-	class="group flex min-h-9 w-full cursor-pointer items-center justify-between space-x-3 rounded-lg py-1.5 text-left transition-colors hover:bg-foreground/10 {isActive
-		? 'bg-foreground/5 text-accent-foreground'
+	class="group flex min-h-9 w-full cursor-pointer items-center justify-between space-x-3 rounded-lg py-1.5 text-left transition-colors hover:bg-sidebar-accent {isActive
+		? 'bg-primary/10 text-primary hover:bg-primary/15'
 		: ''} {isSelected ? 'bg-primary/10 hover:bg-primary/15' : ''} {isSelectionMode
 		? 'is-selection-mode'
 		: ''} px-2"

@@ -34,51 +34,105 @@
 }
 
 :root {
-	--radius: 0.625rem;
+	--radius: 0.75rem;
 	/* expanded desktop sidebar width, overridden once the user drags its edge */
 	--sidebar-width: 18rem;
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.145 0 0);
-	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.145 0 0);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.145 0 0);
-	--primary: oklch(0.205 0 0);
-	--primary-foreground: oklch(0.985 0 0);
-	--secondary: oklch(0.95 0 0);
-	--secondary-foreground: oklch(0.205 0 0);
-	--muted: oklch(0.97 0 0);
-	--muted-foreground: oklch(0.556 0 0);
-	--accent: oklch(0.95 0 0);
-	--accent-foreground: oklch(0.205 0 0);
+
+	/* ember studio — paper (light) studio */
+	--background: oklch(0.977 0.004 248);
+	--foreground: oklch(0.23 0.02 262);
+	--card: oklch(0.995 0.0015 248);
+	--card-foreground: oklch(0.23 0.02 262);
+	--popover: oklch(0.997 0.002 248);
+	--popover-foreground: oklch(0.23 0.02 262);
+	--primary: oklch(0.63 0.17 48);
+	--primary-foreground: oklch(0.985 0.005 60);
+	--secondary: oklch(0.934 0.006 250);
+	--secondary-foreground: oklch(0.23 0.02 262);
+	--muted: oklch(0.934 0.005 250);
+	--muted-foreground: oklch(0.5 0.012 262);
+	--accent: oklch(0.92 0.011 52);
+	--accent-foreground: oklch(0.23 0.02 262);
 	--destructive: oklch(0.577 0.245 27.325);
-	--border: oklch(0.875 0 0);
-	--input: oklch(0.92 0 0);
-	--ring: oklch(0.708 0 0);
-	--chart-1: oklch(0.646 0.222 41.116);
-	--chart-2: oklch(0.6 0.118 184.704);
-	--chart-3: oklch(0.398 0.07 227.392);
-	--chart-4: oklch(0.828 0.189 84.429);
-	--chart-5: oklch(0.769 0.188 70.08);
-	--sidebar: oklch(0.985 0 0);
-	--sidebar-foreground: oklch(0.145 0 0);
-	--sidebar-primary: oklch(0.205 0 0);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.97 0 0);
-	--sidebar-accent-foreground: oklch(0.205 0 0);
-	--sidebar-border: oklch(0.922 0 0);
-	--sidebar-ring: oklch(0.708 0 0);
-	--code-background: oklch(0.985 0 0);
-	--code-foreground: oklch(0.145 0 0);
+	--border: oklch(0.884 0.006 252);
+	--input: oklch(0.9 0.006 252);
+	--ring: oklch(0.66 0.17 48 / 0.45);
+	--chart-1: oklch(0.63 0.17 48);
+	--chart-2: oklch(0.55 0.13 195);
+	--chart-3: oklch(0.45 0.09 265);
+	--chart-4: oklch(0.7 0.16 85);
+	--chart-5: oklch(0.58 0.17 15);
+	--sidebar: oklch(0.955 0.004 250);
+	--sidebar-foreground: oklch(0.23 0.02 262);
+	--sidebar-primary: oklch(0.63 0.17 48);
+	--sidebar-primary-foreground: oklch(0.985 0.005 60);
+	--sidebar-accent: oklch(0.92 0.011 52);
+	--sidebar-accent-foreground: oklch(0.23 0.02 262);
+	--sidebar-border: oklch(0.885 0.006 251);
+	--sidebar-ring: oklch(0.66 0.17 48 / 0.45);
+	--code-background: oklch(0.958 0.005 250);
+	--code-foreground: oklch(0.23 0.02 262);
 	--font-mono:
-		ui-monospace, SFMono-Regular, 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
-		'Liberation Mono', Menlo, monospace;
+		ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, 'Liberation Mono',
+		monospace;
 	--layer-popover: 1000000;
+
+	/* texture: dot grid + faint ember glow from the top */
+	--texture-dots: radial-gradient(circle, oklch(0.23 0.02 262 / 0.085) 1px, transparent 1.1px);
+	--glow-top: radial-gradient(
+		ellipse 90% 55% at 50% -18%,
+		oklch(0.63 0.17 48 / 0.09),
+		transparent 65%
+	);
 
 	--chat-form-area-height: 8rem;
 	--chat-form-area-offset: 2rem;
 	--chat-form-padding-top: 6rem;
 	--max-message-height: max(24rem, min(80dvh, calc(100dvh - var(--chat-form-area-height) - 12rem)));
+}
+
+.dark {
+	/* ember studio — midnight (dark) studio */
+	--background: oklch(0.155 0.016 263);
+	--foreground: oklch(0.92 0.012 260);
+	--card: oklch(0.2 0.017 263);
+	--card-foreground: oklch(0.92 0.012 260);
+	--popover: oklch(0.225 0.018 263);
+	--popover-foreground: oklch(0.92 0.012 260);
+	--primary: oklch(0.79 0.155 70);
+	--primary-foreground: oklch(0.2 0.04 62);
+	--secondary: oklch(0.255 0.017 263);
+	--secondary-foreground: oklch(0.92 0.012 260);
+	--muted: oklch(0.23 0.014 263);
+	--muted-foreground: oklch(0.67 0.012 262);
+	--accent: oklch(0.245 0.017 263);
+	--accent-foreground: oklch(0.92 0.012 260);
+	--destructive: oklch(0.704 0.191 22.216);
+	--border: oklch(0.27 0.014 262);
+	--input: oklch(0.27 0.014 262);
+	--ring: oklch(0.79 0.155 70 / 0.5);
+	--chart-1: oklch(0.79 0.155 70);
+	--chart-2: oklch(0.696 0.17 162.48);
+	--chart-3: oklch(0.769 0.188 70.08);
+	--chart-4: oklch(0.627 0.265 303.9);
+	--chart-5: oklch(0.645 0.246 16.439);
+	--sidebar: oklch(0.175 0.015 263);
+	--sidebar-foreground: oklch(0.92 0.012 260);
+	--sidebar-primary: oklch(0.79 0.155 70);
+	--sidebar-primary-foreground: oklch(0.2 0.04 62);
+	--sidebar-accent: oklch(0.245 0.017 263);
+	--sidebar-accent-foreground: oklch(0.92 0.012 260);
+	--sidebar-border: oklch(0.27 0.014 262);
+	--sidebar-ring: oklch(0.79 0.155 70 / 0.5);
+	--code-background: oklch(0.185 0.015 262);
+	--code-foreground: oklch(0.875 0.012 260);
+
+	--texture-dots: radial-gradient(circle, oklch(0.92 0.012 260 / 0.07) 1px, transparent 1.1px);
+	--glow-top: radial-gradient(
+		ellipse 90% 55% at 50% -18%,
+		oklch(0.79 0.155 70 / 0.075),
+		transparent 65%
+	);
 }
 
 @media (min-width: 640px) {
@@ -87,42 +141,6 @@
 		--chat-form-area-offset: 12rem;
 		--chat-form-padding-top: 6rem;
 	}
-}
-
-.dark {
-	--background: oklch(0.16 0 0);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.205 0 0);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.205 0 0);
-	--popover-foreground: oklch(0.985 0 0);
-	--primary: oklch(0.922 0 0);
-	--primary-foreground: oklch(0.205 0 0);
-	--secondary: oklch(0.29 0 0);
-	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.269 0 0);
-	--muted-foreground: oklch(0.708 0 0);
-	--accent: oklch(0.269 0 0);
-	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
-	--border: oklch(1 0 0 / 30%);
-	--input: oklch(1 0 0 / 30%);
-	--ring: oklch(0.556 0 0);
-	--chart-1: oklch(0.488 0.243 264.376);
-	--chart-2: oklch(0.696 0.17 162.48);
-	--chart-3: oklch(0.769 0.188 70.08);
-	--chart-4: oklch(0.627 0.265 303.9);
-	--chart-5: oklch(0.645 0.246 16.439);
-	--sidebar: oklch(0.2 0 0);
-	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-primary: oklch(0.488 0.243 264.376);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.269 0 0);
-	--sidebar-accent-foreground: oklch(0.985 0 0);
-	--sidebar-border: oklch(1 0 0 / 10%);
-	--sidebar-ring: oklch(0.556 0 0);
-	--code-background: oklch(0.225 0 0);
-	--code-foreground: oklch(0.875 0 0);
 }
 
 @theme inline {
@@ -168,8 +186,16 @@
 		@apply border-border outline-ring/50;
 	}
 
+	::selection {
+		background: color-mix(in oklch, var(--primary) 28%, transparent);
+	}
+
 	body {
 		@apply bg-background text-foreground antialiased;
+		background-image: var(--glow-top), var(--texture-dots);
+		background-size:
+			100% 100%,
+			26px 26px;
 		scrollbar-width: thin;
 		scrollbar-gutter: stable;
 	}
@@ -217,11 +243,11 @@
 	}
 
 	*:hover::-webkit-scrollbar-thumb {
-		background: hsl(var(--muted-foreground) / 0.3);
+		background: hsl(var(--muted-foreground) / 0.35);
 	}
 
 	*::-webkit-scrollbar-thumb:hover {
-		background: hsl(var(--muted-foreground) / 0.5);
+		background: hsl(var(--muted-foreground) / 0.55);
 	}
 
 	:where(code, pre, kbd, samp) {
@@ -249,6 +275,20 @@
 			color-mix(in srgb, var(--background) 40%, transparent) 75%,
 			transparent 100%
 		);
+	}
+
+	/* subtle dot texture on interior panels (model-cards, settings cards, empty state) */
+	.dot-grid {
+		background-image: var(--texture-dots);
+		background-size: 22px 22px;
+		background-position: center;
+	}
+
+	/* ember glow ring for primary actions in dark mode (no hover needed to read it) */
+	.glow {
+		box-shadow:
+			0 0 0 1px color-mix(in oklch, var(--primary) 30%, transparent),
+			0 8px 32px -12px color-mix(in oklch, var(--primary) 55%, transparent);
 	}
 
 	.shimmer-text {

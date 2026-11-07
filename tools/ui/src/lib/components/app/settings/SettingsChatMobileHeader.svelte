@@ -40,10 +40,10 @@
 		<ScrollCarousel alwaysShowArrows {carousel} containerClass="py-2" innerClass="gap-2">
 			{#each sections as section (section.title)}
 				<button
-					class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm whitespace-nowrap transition-colors first:ml-4 last:mr-4 hover:bg-accent {isActive(
+					class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm whitespace-nowrap transition-colors first:ml-4 last:mr-4 hover:bg-sidebar-accent {isActive(
 						section
 					)
-						? 'bg-accent text-accent-foreground'
+						? 'bg-primary/10 text-primary font-medium'
 						: 'text-muted-foreground'}"
 					{...{ [UI_DATA_ATTRS.ACTIVE]: isActive(section) }}
 					onclick={(e: MouseEvent) => {

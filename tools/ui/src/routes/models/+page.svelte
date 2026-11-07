@@ -26,6 +26,9 @@
 <div class="mx-auto flex h-[100dvh] w-full max-w-7xl flex-col gap-6 px-4 pt-12 md:px-8 md:pt-6">
 	<div class="flex items-start gap-4">
 		<div class="flex min-w-0 flex-col gap-1">
+			<div class="font-mono text-[10px] font-medium uppercase tracking-[0.3em] text-primary/80">
+				Local studio · models
+			</div>
 			<h1 class="text-2xl font-semibold tracking-tight">Models</h1>
 
 			<p class="text-sm text-muted-foreground">
@@ -35,10 +38,10 @@
 
 		{#if uiStore.isDiscoverEnabled}
 			<Button
-				class="ml-auto shrink-0 gap-1.5"
+				class="ml-auto shrink-0 gap-1.5 dark:glow"
 				onclick={() => uiStore.openModelsDiscover()}
 				size="sm"
-				variant="tertiary"
+				variant="default"
 			>
 				<DISCOVER_ICON class="h-3.5 w-3.5" />
 

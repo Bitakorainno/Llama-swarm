@@ -1,10 +1,10 @@
 export const BOX_BORDER =
-	'border border-border/30 focus-within:border-border  dark:border-border/20 dark:focus-within:border-border';
+	'border border-border/60 focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 dark:border-border/80 dark:focus-within:border-ring';
 
 export const INPUT_CLASSES = `
-    bg-muted/60 dark:bg-muted/75
+    bg-card dark:bg-card
     ${BOX_BORDER}
-    shadow-sm
+    shadow-[0_1px_2px_oklch(0_0_0/0.06),0_8px_30px_-12px_oklch(0_0_0/0.25)] dark:shadow-[0_1px_2px_oklch(0_0_0/0.4),0_12px_40px_-16px_oklch(0_0_0/0.6)]
     outline-none
     text-foreground
 `;
@@ -31,11 +31,11 @@ export const TAB_SURFACE_CLASS =
 
 /** Tab surface at rest: invisible until hovered. */
 export const TAB_SURFACE_IDLE_CLASS =
-	'border-transparent hover:bg-primary/10 hover:border-border/10 hover:shadow-sm';
+	'border-transparent hover:bg-sidebar-accent hover:border-border/10 hover:shadow-sm';
 
 /** Tab surface of the open tab. */
 export const TAB_SURFACE_ACTIVE_CLASS =
-	'bg-muted/60 border-border/10 shadow-sm text-accent-foreground hover:bg-primary/15';
+	'bg-primary/10 border-primary/20 shadow-sm text-primary hover:bg-primary/15';
 
 /** Selects the focused chat-form input (either renderer) to restore focus after model actions. */
 export const CHAT_INPUT_FOCUS_SELECTOR =

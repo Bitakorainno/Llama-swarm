@@ -107,9 +107,9 @@
 			{#if showIcons}
 				<div transition:fade={itemTransition}>
 					<Button
-						class="w-full min-w-9 justify-between px-2 backdrop-blur-none! hover:[&>kbd]:opacity-100 {isActive
-							? 'bg-accent text-accent-foreground'
-							: ''}"
+						class="w-full min-w-9 justify-between px-2 backdrop-blur-none! hover:[&>kbd]:opacity-100 hover:bg-sidebar-accent {isActive
+							? 'bg-primary/10 text-primary font-medium hover:bg-primary/15'
+							: 'text-muted-foreground'}"
 						href={item.route}
 						onclick={itemOnClick}
 						size="default"
@@ -150,8 +150,8 @@
 				<div transition:fade={itemTransition}>
 					<ActionIcon
 						class="h-9 w-9 rounded-full hover:bg-accent! {isActive
-							? 'bg-accent text-accent-foreground'
-							: ''}"
+							? 'bg-primary/10 text-primary'
+							: 'text-muted-foreground'}"
 						icon={item.icon}
 						iconSize={ICON_CLASS_DEFAULT}
 						onclick={itemOnClick}

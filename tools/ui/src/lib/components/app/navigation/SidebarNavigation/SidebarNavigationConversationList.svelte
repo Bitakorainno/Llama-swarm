@@ -112,9 +112,11 @@
 	<div class="mt-2 flex min-h-0 flex-1 flex-col gap-4 md:gap-0 whitespace-nowrap {className}">
 		{#if conversations.length > 0}
 			<div
-				class="text-muted-foreground flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium"
+				class="text-muted-foreground flex h-8 shrink-0 items-center justify-between rounded-md px-2 text-xs font-medium"
 			>
-				Recent conversations
+				<span>Recent chats</span>
+
+				<span class="font-mono text-[10px] text-muted-foreground/70">{conversations.length}</span>
 			</div>
 		{/if}
 

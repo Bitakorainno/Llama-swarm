@@ -19,7 +19,8 @@
 				sm: 'h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5'
 			},
 			variant: {
-				default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
+				default:
+					'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 dark:shadow-[0_0_0_1px_oklch(0.79_0.155_70/0.35),0_10px_34px_-14px_oklch(0.79_0.155_70/0.55)] dark:hover:bg-primary',
 				destructive:
 					'bg-destructive shadow-sm hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 text-white!',
 				ghost: 'hover:text-accent-foreground hover:bg-muted-foreground/10 backdrop-blur-sm',

@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { ChatForm } from '$lib/components/app';
 	import { useDraftMessages } from '$lib/hooks/use-draft-messages.svelte';
-	import { deviceStore } from '$lib/stores';
+	import { deviceStore, draftRequestStore } from '$lib/stores';
 	import { onMount } from 'svelte';
 
 	interface Props {
@@ -115,6 +115,16 @@
 
 		chatFormRef?.focus();
 	}
+
+	$effect(() => {
+		const request = draftRequestStore.requested;
+
+		if (request !== null) {
+			message = request;
+			draftRequestStore.clear();
+			void focusFormUnlessCaptured();
+		}
+	});
 
 	onMount(() => {
 		if (!deviceStore.isMobile) {
